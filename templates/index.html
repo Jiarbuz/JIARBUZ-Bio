@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>{{ bio.nickname }}</title>
+
+  <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+  <link href="https://fonts.cdnfonts.com/css/perfect-dos-vga-437" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+  <!-- BOOT SCREEN -->
+  <div id="boot-screen" class="boot-screen" aria-hidden="false">
+    <div id="boot-log" class="boot-log" role="status" aria-live="polite"></div>
+  </div>
+
+  <!-- SHUTDOWN OVERLAY -->
+  <div id="shutdown-overlay" class="shutdown-overlay">
+    <div class="shutdown-text">System shutting down...</div>
+    <div class="shutdown-progress">
+      <div class="shutdown-progress-bar"></div>
+    </div>
+  </div>
+
+  <!-- MAIN UI -->
+  <div id="app" class="app hidden" aria-hidden="true">
+    <div class="fade-layer" aria-hidden="true"></div>
+
+    <!-- ОСНОВНОЙ МОНИТОР -->
+    <div class="main-monitor">
+      <div class="main-monitor-screen">
+        <div class="crt" role="application" aria-label="Main UI">
+          <!-- Мобильное меню -->
+          <div class="mobile-menu-btn">
+            <i class="fas fa-bars"></i>
+          </div>
+
+          <header class="topbar">
+            <h1 class="brand">JIARBUZ</h1>
+          </header>
+
+          <div class="main-content">
+            <!-- Neofetch терминал -->
+            <div class="neofetch-terminal">
+              <div class="terminal-header">
+                <span class="terminal-title">system@jiarbuz:~</span>
+                <div class="terminal-controls">
+                  <span class="control-btn minimize"></span>
+                  <span class="control-btn maximize"></span>
+                  <span class="control-btn close"></span>
+                </div>
+              </div>
+              <div class="terminal-body">
+                <div class="neofetch-content">
+                  <div class="ascii-art">
+⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣯⣿⣿⣿⣯⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠟⠋⠉⠙⠿
+⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⣿⣿⣿⣿⣿⣿⣿⣿⣿⡻⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠿⠋⠀⠀⠀⠀⠀⠀
+⢂⢀⠀⠀⢄⡉⢊⡖⣀⣤⠲⣀⠨⣭⠭⠝⠙⠩⠍⠉⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠿⠟⠛⠛⢛⠛⣻⡛⣛⠟⢛⡛⠛⠛⣻⠿⠋⠁⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠁⡐⠀⡀⠈⠉⠀⣢⠀⢘⢁⠀⠈⡀⠇⡇⢀⢸⣷⣿⣿⣿⣿⣿⣿⣿⣿⣯⣿⣟⠁⠤⣶⣆⡄⢀⡐⠁⢀⡢⢁⣚⣴⣦⠀⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⡂⠥⠀⠔⠢⠲⢄⠀⠰⠁⠨⢘⠈⠁⠀⠌⡠⠲⠙⠼⣿⣿⡟⢁⡠⢭⣭⣤⣩⣷⣾⡹⡴⣿⣽⣮⡆⠦⠐⢰⣦⣿⣿⣿⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡀
+⠁⠁⠀⠀⢀⢁⣠⠀⠀⠤⠀⠉⠇⢐⢀⠒⠠⠀⠐⠖⢟⣋⣄⡳⣎⣿⣹⡿⣾⣿⣿⣿⣯⣿⣿⣿⣷⢀⣁⣙⣿⣿⡿⠉⠀⠀⠀⠀⠀⠀⠀⠀⠀⣠⣴⣾⣮⣴
+⠜⠠⡤⠀⡢⡱⠩⠘⡀⠙⠂⠀⠀⢈⠒⠂⠀⠀⡀⠠⢼⣿⣿⣿⣿⣽⣿⡿⣿⡿⠿⣿⣿⣿⣿⣿⣿⡿⣿⣿⠇⠉⠀⠀⠀⠀⠀⠀⠀⢀⣠⣴⣿⣿⣿⣿⣿⣿
+⠁⣎⠴⠀⠊⢀⠀⠘⠂⠠⠀⠁⠐⠂⢄⡠⠀⠀⠀⠁⠀⣿⣿⣿⣿⣿⣿⣧⣿⣷⣶⣿⣿⣿⣷⣿⣿⠧⠀⠁⢀⣀⡀⠀⠀⠀⢀⣠⣶⣿⣿⣿⣿⣿⣿⣿⣿⣿
+⣶⣶⣤⣤⣖⡈⠘⢰⠀⠀⠈⠀⠁⠣⡀⠀⠀⠄⠠⠀⠀⠸⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠋⠁⠀⠀⠀⠘⢿⣿⣦⣴⣾⣿⣿⠟⠉⠙⠛⠻⢿⣿⣿⣿⣿
+⣿⣿⣿⣿⣿⣿⣷⣄⠀⠇⠐⠀⠈⠁⠁⠔⠄⡂⠁⠨⢄⠄⠹⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣇⠀⠀⣀⡄⠀⠄⠈⠛⠛⠛⠛⡻⡣⠐⡈⢀⣼⡈⠄⠀⠩⠿⢿
+⣿⣿⣿⣿⣿⣿⣿⣿⣆⠂⠌⢀⠀⠄⢀⡈⠐⠀⠈⠈⠉⠂⠂⠸⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇⠰⡲⠁⠀⠂⢀⠉⠁⠘⠐⠀⠀⡂⠀⠀⠁⠀⢀⠀
+⣿⣿⣿⣿⣿⣿⣿⣿⣿⢀⠒⠀⠘⢂⡬⡔⡐⠀⣀⣠⣬⣼⣾⣦⣎⡻⣿⣷⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⡷⣤⣴⣧⣧⣤⣤⣬⣬⣄⣄⣀⣤⣤⣤⣾⣷⣿⣿⣿
+⣿⡿⣽⣻⣿⣿⣯⣿⣿⣤⣴⣥⣤⣈⢈⣠⣷⣿⣿⣿⣿⣿⣿⣿⣿⣥⡘⡻⣾⣿⣿⣿⣿⣿⣿⡿⣟⣠⡏⢼⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+⣷⣿⣿⣿⣿⣿⣿⣯⡟⣿⣿⣿⣿⣿⣿⣯⡻⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣶⣿⡛⣿⣧⣽⣽⣧⣯⣿⡟⢽⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+⣿⣿⣿⣿⣿⣿⣿⣿⣖⣶⣶⠲⠶⢶⣶⠉⢻⣮⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣦⣙⢙⠿⠿⣛⣥⣴⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠕⠀⢀⣬⠏⠀⢸⣿⣷⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+⣻⣿⣿⣿⣿⣿⡿⣟⢙⣟⣩⣿⢱⣿⠃⠀⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+⣷⣾⣽⣯⣭⣶⣿⣿⣿⢧⣶⣦⣿⠏⠀⢠⣟⣓⣻⣿⣻⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠿⡿
+⠋⠀⣀⢀⣀⣀⣀⣿⠁⣰⠿⣿⣿⠇⠀⣼⣿⣿⣿⣿⣽⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠷⠇⠔⠰
+⣍⣩⠛⣯⣭⣟⣘⢿⣤⣄⢀⣽⣟⠀⠀⣿⣿⣿⣟⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠟⠀⠨⠆⠐
+⣫⡛⣲⣖⣾⢳⢰⣶⣾⡏⣾⣿⡇⠀⢸⣿⣿⣯⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⡣⣀⠄⠈⠁⠈
+⣹⣵⣾⣧⢩⣿⢼⣿⣯⣥⣿⣟⠀⠀⢾⣯⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠃⢀⢄⣄⡀⢍⣀
+⣿⣯⣭⠉⠀⠀⠀⠀⠀⢡⣿⡇⠀⢀⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣯⣭⣢⠃⠑⠥⠀⡁
+⣿⣿⣿⣀⣀⣀⣀⡀⣠⢺⣿⠃⠀⣸⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣆⣄⡀⠉⠀⠀
+⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠀⠀⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣻⣿⣷⣙⢿⣿⣿⢿⣿⣿⣿⣿⣿⣿⣙⣷⣿⣿⣷⣶⣤
+⣿⣿⣿⣿⣿⣿⣿⣿⣿⣯⡇⠀⢰⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⢿⡽⠿⠿⢿⣿⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣾⡿⢿⠯⠿⢿⣿⣿⣽⣿
+⢿⡿⠿⠿⠿⠿⠿⠿⠛⠿⠛⠋⠀⠀⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣳⣿⡿⠀⠀⠀⠀⠈⠉⠛⠻⣿⣿⣿⣻⣾⡟⠃⠁⠀⢐⠈⢀⣂⣻⣿⠿⠛
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢠⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⣿⣿⣿⣿⠃⠀⠀⠀⠀⢀⣤⣶⣾⣿⣿⣿⣿⣿⡏⠢⠀⢀⣤⣴⣿⠽⣷⣿⣿⣿⣿
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠿⣿⣿⣿⣿⣿⣟⠇⠀⠀⠀⠀⠈⢸⣽⣾⣿⣿⣻⡻⣿⣇⣀⠀⠀⠺⣽⣶⣾⣿⣿⣽⣿⣿
+                  </div>
+                  <div class="system-info">
+                    <div class="info-line"><span class="label">USER</span><span class="separator">:</span> JIARBUZ</div>
+                    <div class="info-line"><span class="label">HOST</span><span class="separator">:</span> ARBUZ Linux x86_64</div>
+                    <div class="info-line"><span class="label">OS</span><span class="separator">:</span> JI-AR22-BUZ8</div>
+                    <div class="info-line"><span class="label">KERNEL</span><span class="separator">:</span> 5.15.0-91-generic</div>
+                    <div class="info-line"><span class="label">UPTIME</span><span class="separator">:</span> <span id="uptime-display">Loading...</span></div>
+                    <div class="info-line"><span class="label">PACKAGES</span><span class="separator">:</span> 2155 (pacman)</div>
+                    <div class="info-line"><span class="label">SHELL</span><span class="separator">:</span> bash 5.1.16</div>
+                    <div class="info-line"><span class="label">RESOLUTION</span><span class="separator">:</span> <span id="resolution-display">Loading...</span></div>
+                    <div class="info-line"><span class="label">WM</span><span class="separator">:</span> BIOS Terminal</div>
+                    <div class="info-line"><span class="label">TERMINAL</span><span class="separator">:</span> retro-terminal</div>
+                    <div class="info-line"><span class="label">CPU</span><span class="separator">:</span> Intel i3-12100F</div>
+                    <div class="info-line"><span class="label">GPU</span><span class="separator">:</span> RTX 2060 SUPER</div>
+                    <div class="info-line"><span class="label">MEMORY</span><span class="separator">:</span> 11161MiB / 16384 MiB</div>
+                  </div>
+                </div>
+
+                <!-- Output for terminal commands -->
+                <div class="terminal-output" id="terminal-output"></div>
+
+                <!-- Interactive terminal prompt -->
+                <div class="terminal-prompt">
+                  <span class="prompt-user">jiarbuz@bio</span>
+                  <span class="prompt-symbol">:</span>
+                  <span class="prompt-path">~</span>
+                  <span class="prompt-symbol">$</span>
+                  <input type="text" class="terminal-input" id="terminal-input" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+                </div>
+
+                <!-- Command hints -->
+                <div class="command-hint">Try commands: help, clear, exit, reboot, date, whoami, devices, games</div>
+              </div>
+            </div>
+
+            <!-- Блок с ссылками -->
+            <div class="links-section">
+              <div class="inner-frame">
+                <div class="frame-title">BIO LINKS</div>
+                <div class="frame-body">
+                  {% for link in bio.links %}
+                  <a class="link-block" href="{{ link.url }}" target="_blank" rel="noopener noreferrer">
+                    <i class="{{ link.icon }}" aria-hidden="true"></i>
+                    <span class="link-text">{{ link.name }}</span>
+                  </a>
+                  {% endfor %}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <footer class="bottombar">
+            <button id="sound-toggle" class="sound-btn" aria-pressed="false" title="Toggle background music">
+              <i id="sound-icon" class="fa-solid fa-volume-high" aria-hidden="true"></i>
+            </button>
+          </footer>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Audio -->
+  <audio id="bg-music" src="{{ url_for('static', filename='sounds/background.mp3') }}" loop preload="auto"></audio>
+  <audio id="hover-sound" src="{{ url_for('static', filename='sounds/hover.mp3') }}" preload="auto"></audio>
+  <audio id="click-sound" src="{{ url_for('static', filename='sounds/click.mp3') }}" preload="auto"></audio>
+  <audio id="appear-sound" src="{{ url_for('static', filename='sounds/interface_appear.mp3') }}" preload="auto"></audio>
+
+  <!-- Основной JS -->
+  <script src="{{ url_for('static', filename='main.js') }}"></script>
+</body>
+</html>

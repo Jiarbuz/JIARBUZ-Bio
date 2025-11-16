@@ -1,0 +1,1120 @@
+/* === SECURE BIOS THEME === */
+:root { --green: #00ff66; }
+
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: #000;
+  font-family: 'Perfect DOS VGA 437', monospace;
+  color: var(--green);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+/* === BOOT SCREEN === */
+.boot-screen {
+  position: fixed;
+  inset: 0;
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  transition: opacity 1s ease-out;
+}
+.boot-screen.fade-out {
+  opacity: 0;
+  pointer-events: none;
+}
+.boot-log {
+  width: 90%;
+  max-width: 800px;
+  font-size: 1.1rem;
+  line-height: 1.4;
+  text-shadow: 0 0 3px var(--green);
+  white-space: pre;
+  color: var(--green);
+}
+
+/* Базовая анимация появления строк с глитчем */
+.boot-line {
+  opacity: 0;
+  position: relative;
+}
+
+.boot-line.glitch {
+  animation: typeAppear 0.4s forwards;
+}
+
+@keyframes typeAppear {
+  0% { opacity: 0; transform: translateX(-5px); }
+  100% { opacity: 1; transform: translateX(0); }
+}
+
+/* Легкий глитч (для большинства строк) */
+.boot-line.light-glitch {
+  animation: lightGlitchAppear 0.5s forwards;
+}
+
+@keyframes lightGlitchAppear {
+  0% {
+    opacity: 0;
+    transform: translateX(-8px) skewX(15deg);
+    filter: blur(1px) hue-rotate(60deg);
+  }
+  25% {
+    opacity: 0.8;
+    transform: translateX(4px) skewX(-10deg);
+    filter: blur(0.5px) hue-rotate(-30deg);
+  }
+  50% {
+    opacity: 0.6;
+    transform: translateX(-2px) skewX(5deg);
+    filter: blur(0px) hue-rotate(20deg);
+  }
+  75% {
+    opacity: 0.9;
+    transform: translateX(1px) skewX(-2deg);
+    filter: blur(0px) hue-rotate(-10deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0) skewX(0);
+    filter: blur(0px) hue-rotate(0deg);
+  }
+}
+
+/* Средний глитч */
+.boot-line.medium-glitch {
+  animation: mediumGlitchAppear 0.7s forwards;
+}
+
+@keyframes mediumGlitchAppear {
+  0% {
+    opacity: 0;
+    transform: translateX(-12px) skewX(20deg) scaleY(1.1);
+    filter: blur(1.5px) hue-rotate(90deg) brightness(1.3);
+    letter-spacing: 3px;
+  }
+  20% {
+    opacity: 0.7;
+    transform: translateX(8px) skewX(-15deg) scaleY(0.9);
+    filter: blur(1px) hue-rotate(-60deg) brightness(1.1);
+    letter-spacing: 5px;
+  }
+  40% {
+    opacity: 0.5;
+    transform: translateX(-6px) skewX(12deg) scaleY(1.05);
+    filter: blur(0.5px) hue-rotate(120deg) brightness(0.9);
+    letter-spacing: 2px;
+  }
+  60% {
+    opacity: 0.8;
+    transform: translateX(4px) skewX(-8deg) scaleY(0.95);
+    filter: blur(0px) hue-rotate(-45deg) brightness(1.2);
+    letter-spacing: 4px;
+  }
+  80% {
+    opacity: 0.6;
+    transform: translateX(-2px) skewX(4deg) scaleY(1.02);
+    filter: blur(0px) hue-rotate(30deg) brightness(1);
+    letter-spacing: 3px;
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0) skewX(0) scaleY(1);
+    filter: blur(0px) hue-rotate(0deg) brightness(1);
+    letter-spacing: normal;
+  }
+}
+
+/* Сильный глитч (для важных строк) */
+.boot-line.severe-glitch {
+  animation: severeGlitchAppear 0.9s forwards;
+  position: relative;
+}
+
+.boot-line.severe-glitch::before,
+.boot-line.severe-glitch::after {
+  content: attr(data-text);
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+}
+
+.boot-line.severe-glitch::before {
+  color: #ff00ff;
+  animation: glitch-red 0.3s 0.3s infinite;
+  z-index: -1;
+}
+
+.boot-line.severe-glitch::after {
+  color: #00ffff;
+  animation: glitch-blue 0.3s 0.5s infinite;
+  z-index: -2;
+}
+
+@keyframes severeGlitchAppear {
+  0% {
+    opacity: 0;
+    transform: translateX(-15px) skewX(25deg) scaleY(1.3);
+    filter: blur(2px) hue-rotate(120deg) brightness(1.5);
+    letter-spacing: 4px;
+  }
+  15% {
+    opacity: 0.9;
+    transform: translateX(12px) skewX(-20deg) scaleY(0.8);
+    filter: blur(1.5px) hue-rotate(-90deg) brightness(1.8);
+    letter-spacing: 6px;
+  }
+  30% {
+    opacity: 0.4;
+    transform: translateX(-9px) skewX(18deg) scaleY(1.2);
+    filter: blur(1px) hue-rotate(180deg) brightness(0.7);
+    letter-spacing: 2px;
+  }
+  45% {
+    opacity: 0.8;
+    transform: translateX(6px) skewX(-12deg) scaleY(0.9);
+    filter: blur(0.5px) hue-rotate(-120deg) brightness(1.4);
+    letter-spacing: 5px;
+  }
+  60% {
+    opacity: 0.6;
+    transform: translateX(-4px) skewX(8deg) scaleY(1.1);
+    filter: blur(0px) hue-rotate(150deg) brightness(1);
+    letter-spacing: 3px;
+  }
+  75% {
+    opacity: 0.9;
+    transform: translateX(2px) skewX(-4deg) scaleY(0.95);
+    filter: blur(0px) hue-rotate(-60deg) brightness(1.2);
+    letter-spacing: 4px;
+  }
+  90% {
+    opacity: 0.7;
+    transform: translateX(-1px) skewX(2deg) scaleY(1.02);
+    filter: blur(0px) hue-rotate(45deg) brightness(1);
+    letter-spacing: 2px;
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0) skewX(0) scaleY(1);
+    filter: blur(0px) hue-rotate(0deg) brightness(1);
+    letter-spacing: normal;
+  }
+}
+
+@keyframes glitch-red {
+  0% { transform: translate(0); opacity: 0.7; }
+  20% { transform: translate(-3px, 1px); opacity: 0.8; }
+  40% { transform: translate(-1px, -2px); opacity: 0.6; }
+  60% { transform: translate(2px, 1px); opacity: 0.9; }
+  80% { transform: translate(1px, -1px); opacity: 0.5; }
+  100% { transform: translate(0); opacity: 0.7; }
+}
+
+@keyframes glitch-blue {
+  0% { transform: translate(0); opacity: 0.6; }
+  20% { transform: translate(2px, -1px); opacity: 0.7; }
+  40% { transform: translate(-1px, 2px); opacity: 0.5; }
+  60% { transform: translate(-2px, -1px); opacity: 0.8; }
+  80% { transform: translate(1px, 1px); opacity: 0.4; }
+  100% { transform: translate(0); opacity: 0.6; }
+}
+
+/* Постоянный мерцающий эффект для всего boot-log */
+.boot-log::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    rgba(0, 255, 102, 0.02) 50%,
+    transparent 100%
+  );
+  animation: screenFlicker 8s infinite;
+  pointer-events: none;
+  z-index: 1;
+}
+
+@keyframes screenFlicker {
+  0%, 100% { opacity: 0.1; }
+  2% { opacity: 0.8; }
+  4% { opacity: 0.2; }
+  8% { opacity: 0.9; }
+  70% { opacity: 0.1; }
+  72% { opacity: 0.4; }
+  77% { opacity: 0.1; }
+}
+
+/* === APP === */
+.app {
+  position: fixed;
+  inset: 0;
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  animation: appFadeIn 1.5s ease 0.5s forwards;
+}
+@keyframes appFadeIn {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+.hidden { display: none !important; }
+
+/* === CRT CONTAINER === */
+.crt {
+  width: 92vw;
+  height: 86vh;
+  border: 3px solid var(--green);
+  position: relative;
+  background: radial-gradient(ellipse at center,
+      rgba(0, 40, 30, 0.15),
+      rgba(0, 20, 16, 0.6));
+  box-shadow: 0 0 40px rgba(0,255,102,0.14),
+              inset 0 0 20px rgba(0,255,102,0.06);
+  opacity: 0;
+  transform: scale(0.98);
+  transition: opacity 1s ease, transform 1s ease;
+}
+.crt.visible {
+  opacity: 1;
+  transform: scale(1);
+}
+.crt::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(0,255,100,0.05) 0px,
+    rgba(0,255,100,0.05) 2px,
+    transparent 2px,
+    transparent 4px
+  );
+  opacity: 0.3;
+  animation: scan 6s linear infinite;
+  mix-blend-mode: screen;
+}
+@keyframes scan {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100%); }
+}
+
+/* brand blink */
+.brand {
+  margin: 15px;
+  font-size: 2.2rem;
+  letter-spacing: 3px;
+  text-align: center;
+  transition: transform 0.35s ease, text-shadow 0.35s ease;
+}
+.brand.blink {
+  animation: brandFlash 700ms ease;
+}
+@keyframes brandFlash {
+  0% { transform: scale(1); text-shadow: 0 0 2px rgba(0,255,102,0.25); }
+  30% { transform: scale(1.08); text-shadow: 0 0 18px rgba(0,255,102,0.9); }
+  60% { transform: scale(0.98); text-shadow: 0 0 6px rgba(0,255,102,0.45); }
+  100% { transform: scale(1); text-shadow: none; }
+}
+
+/* === ОСНОВНОЙ МАКЕТ === */
+.main-content {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 25px;
+  padding: 25px;
+  height: calc(100% - 80px);
+  align-items: stretch; /* Выравнивание по высоты */
+}
+
+.links-section {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* === NEOFETCH TERMINAL === */
+.neofetch-terminal {
+  border: 2px solid var(--green);
+  background: rgba(0, 20, 10, 0.8);
+  box-shadow: 0 0 20px rgba(0,255,102,0.1);
+  border-radius: 8px;
+  overflow: hidden;
+  height: 100%; /* Занимает всю доступную высоту */
+  display: flex;
+  flex-direction: column;
+}
+
+.terminal-header {
+  background: rgba(0,255,102,0.1);
+  padding: 10px 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--green);
+}
+
+.terminal-title {
+  font-size: 1rem;
+  color: var(--green);
+  font-family: 'Perfect DOS VGA 437', monospace;
+  font-weight: bold;
+}
+
+.terminal-controls {
+  display: flex;
+  gap: 10px;
+}
+
+.control-btn {
+  width: 16px;
+  height: 16px;
+  border-radius: 3px;
+  background: rgba(0,255,102,0.3);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: bold;
+  color: rgba(0, 20, 10, 0.9);
+}
+
+.control-btn:hover {
+  transform: scale(1.1);
+}
+
+.control-btn.minimize:hover {
+  background: #ffcc00;
+}
+
+.control-btn.maximize:hover {
+  background: #00ccff;
+}
+
+.control-btn.close:hover {
+  background: #ff4444;
+}
+
+.terminal-body {
+  padding: 20px;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 0.85rem;
+  line-height: 1.3;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.neofetch-content {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 20px;
+  align-items: start;
+  margin-bottom: 15px;
+}
+
+.ascii-art {
+  color: var(--green);
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 0.7rem;
+  line-height: 1.1;
+  white-space: pre;
+  text-shadow: 0 0 2px var(--green);
+}
+
+.system-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.info-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--green);
+  font-family: 'Perfect DOS VGA 437', monospace;
+  font-size: 0.9rem;
+}
+
+.label {
+  color: var(--green);
+  font-weight: bold;
+  min-width: 90px;
+  text-align: right;
+  font-size: 0.9rem;
+}
+
+.separator {
+  color: var(--green);
+  font-weight: bold;
+}
+
+.terminal-prompt {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  margin-top: 15px;
+  font-family: 'Perfect DOS VGA 437', monospace;
+  font-size: 1rem;
+}
+
+.prompt-user {
+  color: #00ff66;
+  font-weight: bold;
+}
+
+.prompt-path {
+  color: #66ff99;
+  font-weight: bold;
+}
+
+.prompt-symbol {
+  color: var(--green);
+  font-weight: bold;
+}
+
+.cursor {
+  color: var(--green);
+  animation: blink 1s infinite;
+  font-weight: bold;
+}
+
+@keyframes blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+
+/* === LINKS === */
+.inner-frame {
+  border: 2px solid var(--green);
+  background: rgba(0,255,102,0.02);
+  padding: 30px;
+  margin: 20px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden; /* Убираем скролл */
+}
+.frame-title {
+  font-size: 1.3rem;
+  margin-bottom: 20px;
+  text-align: center;
+  font-weight: bold;
+  letter-spacing: 1px;
+}
+.frame-body {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 18px;
+  width: 100%;
+  max-height: 100%; /* Ограничиваем высоту */
+  overflow: hidden; /* Убираем скролл */
+}
+
+/* initial hidden state for links; visible class toggled by JS */
+.link-block {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 15px;
+  padding: 20px 25px;
+  font-size: 1.3rem;
+  border: 2px solid rgba(0,255,102,0.4);
+  border-radius: 8px;
+  color: var(--green);
+  background: rgba(0,255,102,0.05);
+  text-decoration: none;
+  transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  z-index: 20;
+  position: relative;
+  opacity: 0;
+  transform: translateY(15px) scale(0.95);
+  min-height: 70px;
+  pointer-events: none;
+  cursor: pointer;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  user-select: none;
+}
+.link-block.visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+}
+.link-block:hover,
+.link-block:focus-visible {
+  background: rgba(0,255,102,0.1);
+  box-shadow: 0 0 14px rgba(0,255,102,0.5);
+  transform: scale(1.03);
+  outline: none;
+}
+
+/* Кнопки с защитой от множественных нажатий */
+.button-disabled {
+  pointer-events: none !important;
+  opacity: 0.6 !important;
+  transition: opacity 0.3s ease;
+}
+
+/* Мобильное меню */
+.mobile-menu-btn {
+  display: none;
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  z-index: 1000;
+  color: var(--green);
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 10px;
+  border: 1px solid rgba(0,255,102,0.3);
+  border-radius: 5px;
+  background: rgba(0,0,0,0.7);
+  transition: all 0.3s ease;
+}
+
+.mobile-menu-btn.button-disabled {
+  opacity: 0.4;
+  transform: scale(0.95);
+}
+
+.bottombar {
+  position: absolute;
+  bottom: 8px;
+  right: 12px;
+}
+.sound-btn {
+  border: 1px solid rgba(0,255,102,0.3);
+  background: transparent;
+  color: var(--green);
+  cursor: pointer;
+  padding: 10px 15px;
+  transition: all 0.3s ease;
+  font-size: 1.1rem;
+  border-radius: 5px;
+}
+.sound-btn:hover {
+  background: var(--green);
+  color: #000;
+}
+
+.sound-btn.button-disabled {
+  opacity: 0.5;
+  transform: scale(0.95);
+}
+
+/* === INTERACTIVE TERMINAL STYLES === */
+.terminal-input {
+  background: transparent;
+  border: none;
+  color: var(--green);
+  font-family: 'Perfect DOS VGA 437', monospace;
+  font-size: 1rem;
+  width: 100%;
+  outline: none;
+  caret-color: var(--green);
+  flex: 1;
+}
+
+.terminal-output {
+  margin-top: 10px;
+  font-family: 'Perfect DOS VGA 437', monospace;
+  font-size: 0.9rem;
+  color: var(--green);
+  white-space: pre-wrap;
+  max-height: 150px;
+  overflow-y: auto;
+  flex-shrink: 0;
+}
+
+.command-hint {
+  position: absolute;
+  bottom: 40px;
+  left: 12px; /* СДВИНУТО ВЛЕВО ДЛЯ ВЫРАВНИВАНИЯ */
+  font-size: 0.8rem;
+  color: rgba(0, 255, 102, 0.6);
+  font-family: 'Perfect DOS VGA 437', monospace;
+}
+
+/* Shutdown animation */
+.shutdown-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: #000;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  color: var(--green);
+  font-family: 'Perfect DOS VGA 437', monospace;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 1s ease;
+}
+
+.shutdown-text {
+  font-size: 1.5rem;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.shutdown-progress {
+  width: 300px;
+  height: 20px;
+  border: 1px solid var(--green);
+  background: rgba(0, 20, 10, 0.8);
+  position: relative;
+  overflow: hidden;
+}
+
+.shutdown-progress-bar {
+  height: 100%;
+  background: var(--green);
+  width: 0%;
+  transition: width 0.5s ease;
+}
+
+/* === RESPONSIVE === */
+@media (max-width: 1200px) {
+  .crt { width: 94vw; height: 88vh; }
+  .frame-body { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
+  .neofetch-content {
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+  .ascii-art {
+    font-size: 0.65rem;
+    text-align: center;
+  }
+  .terminal-body {
+    padding: 18px;
+  }
+}
+
+@media (max-width: 992px) {
+  .crt { width: 96vw; height: 90vh; }
+  .frame-body { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+  .link-block { font-size: 1.2rem; padding: 18px 22px; }
+  .brand { font-size: 2rem; margin: 12px; }
+  .main-content {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  .neofetch-terminal {
+    order: 2;
+  }
+  .links-section {
+    order: 1;
+  }
+  .ascii-art {
+    font-size: 0.6rem;
+  }
+  .terminal-body {
+    padding: 16px;
+  }
+}
+
+@media (max-width: 768px) {
+  .crt {
+    width: 98vw;
+    height: 94vh;
+    margin: 10px;
+  }
+  .inner-frame {
+    padding: 25px 20px;
+    margin: 15px 10px;
+    max-height: calc(100% - 80px);
+  }
+  .frame-body {
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+  .link-block {
+    font-size: 1.2rem;
+    padding: 18px 20px;
+    min-height: 65px;
+    justify-content: center;
+  }
+  .brand {
+    font-size: 1.8rem;
+    margin: 10px;
+  }
+  .frame-title {
+    font-size: 1.2rem;
+    margin-bottom: 18px;
+  }
+  .bottombar {
+    bottom: 6px;
+    right: 8px;
+  }
+  .sound-btn {
+    padding: 8px 12px;
+    font-size: 1rem;
+  }
+  .main-content {
+    padding: 20px;
+    gap: 15px;
+  }
+  .neofetch-terminal {
+    margin: 0 10px;
+  }
+  .terminal-body {
+    padding: 15px;
+  }
+  .ascii-art {
+    font-size: 0.55rem;
+  }
+  .info-line {
+    font-size: 0.85rem;
+  }
+  .label {
+    min-width: 80px;
+  }
+  .terminal-header {
+    padding: 8px 12px;
+  }
+  .terminal-title {
+    font-size: 0.9rem;
+  }
+
+  /* Мобильное меню для маленьких экранов */
+  .mobile-menu-btn {
+    display: block;
+  }
+
+  /* Скрываем элементы в мобильном меню */
+  .main-content {
+    position: relative;
+  }
+
+  .neofetch-terminal.mobile-hidden,
+  .links-section.mobile-hidden {
+    display: none;
+  }
+
+  /* Terminal адаптация */
+  .terminal-output {
+    max-height: 100px;
+  }
+
+  .command-hint {
+    bottom: 30px;
+    left: 10px; /* АДАПТАЦИЯ ДЛЯ МОБИЛЬНЫХ */
+    font-size: 0.7rem;
+  }
+
+  .shutdown-text {
+    font-size: 1.2rem;
+  }
+
+  .shutdown-progress {
+    width: 250px;
+    height: 15px;
+  }
+}
+
+@media (max-width: 480px) {
+  .crt {
+    width: 99vw;
+    height: 96vh;
+    border-width: 2px;
+  }
+  .inner-frame {
+    padding: 20px 15px;
+    margin: 10px 5px;
+    border-width: 1px;
+  }
+  .link-block {
+    font-size: 1.1rem;
+    padding: 16px 18px;
+    min-height: 60px;
+    gap: 12px;
+  }
+  .brand {
+    font-size: 1.6rem;
+    margin: 8px;
+  }
+  .frame-title {
+    font-size: 1.1rem;
+    margin-bottom: 15px;
+  }
+  .frame-body {
+    gap: 12px;
+  }
+  .bottombar {
+    bottom: 4px;
+    right: 6px;
+  }
+  .sound-btn {
+    padding: 7px 10px;
+    font-size: 0.9rem;
+  }
+  .main-content {
+    padding: 15px;
+    gap: 12px;
+  }
+  .neofetch-terminal {
+    margin: 0 5px;
+  }
+  .terminal-body {
+    padding: 12px;
+  }
+  .ascii-art {
+    font-size: 0.5rem;
+    line-height: 1;
+  }
+  .info-line {
+    font-size: 0.8rem;
+  }
+  .label {
+    min-width: 70px;
+  }
+  .terminal-header {
+    padding: 6px 10px;
+  }
+  .terminal-title {
+    font-size: 0.85rem;
+  }
+
+  /* Terminal для очень маленьких экранов */
+  .terminal-output {
+    max-height: 80px;
+    font-size: 0.8rem;
+  }
+
+  .command-hint {
+    bottom: 25px;
+    left: 8px; /* АДАПТАЦИЯ ДЛЯ ОЧЕНЬ МАЛЕНЬКИХ ЭКРАНОВ */
+    font-size: 0.65rem;
+  }
+
+  .shutdown-text {
+    font-size: 1rem;
+  }
+
+  .shutdown-progress {
+    width: 200px;
+    height: 12px;
+  }
+}
+
+@media (max-width: 360px) {
+  .link-block {
+    font-size: 1rem;
+    padding: 14px 16px;
+    min-height: 55px;
+  }
+  .brand {
+    font-size: 1.4rem;
+  }
+  .inner-frame {
+    padding: 18px 12px;
+  }
+  .ascii-art {
+    font-size: 0.45rem;
+  }
+  .info-line {
+    font-size: 0.75rem;
+  }
+}
+
+/* Для очень высоких экранов */
+@media (min-height: 1000px) {
+  .crt { height: 80vh; }
+  .inner-frame { max-height: calc(100% - 120px); }
+}
+
+/* Портретная ориентация на мобильных */
+@media (max-width: 768px) and (orientation: portrait) {
+  .crt { height: 92vh; }
+  .inner-frame {
+    padding: 22px 16px;
+    max-height: calc(100% - 70px);
+  }
+  .neofetch-terminal {
+    max-height: 350px;
+    overflow-y: auto;
+  }
+}
+
+/* Ландшафтная ориентация на мобильных */
+@media (max-width: 768px) and (orientation: landscape) {
+  .crt { height: 88vh; }
+  .inner-frame {
+    padding: 18px 14px;
+    max-height: calc(100% - 60px);
+  }
+  .link-block {
+    padding: 14px 16px;
+    min-height: 55px;
+  }
+  .main-content {
+    grid-template-columns: 1fr 1fr;
+  }
+  .neofetch-content {
+    grid-template-columns: 1fr;
+  }
+  .ascii-art {
+    font-size: 0.5rem;
+  }
+}
+
+/* Touch device improvements */
+@media (hover: none) and (pointer: coarse) {
+  .link-block {
+    padding: 18px 20px;
+    min-height: 70px;
+  }
+
+  .link-block:active {
+    background: rgba(0,255,102,0.15);
+    transform: scale(0.98);
+  }
+
+  .sound-btn:active {
+    background: var(--green);
+    color: #000;
+  }
+}
+
+@media (max-width: 768px) {
+  .monitor, .boot-screen, .app {
+    transform: scale(0.8);
+    transform-origin: top center;
+  }
+
+  .main-content {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .links-section {
+    width: 90%;
+  }
+
+  .neofetch-terminal {
+    width: 95%;
+    font-size: 0.85rem;
+  }
+
+  .frame-body a.link-block {
+    padding: 10px;
+    font-size: 1rem;
+  }
+}
+
+/* === MAIN MONITOR STYLES === */
+.main-monitor {
+  width: 95vw;
+  height: 90vh;
+  border: 3px solid var(--green);
+  background: #000;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 30px;
+  box-shadow: 0 0 30px rgba(0,255,102,0.3);
+}
+
+.main-monitor-screen {
+  width: 98%;
+  height: 96%;
+  background: #001a00;
+  border: 1px solid var(--green);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.main-monitor-stand {
+  width: 100px;
+  height: 25px;
+  background: #333;
+  position: absolute;
+  bottom: -25px;
+  border-radius: 0 0 5px 5px;
+}
+
+.main-monitor-base {
+  width: 150px;
+  height: 12px;
+  background: #555;
+  position: absolute;
+  bottom: -37px;
+  border-radius: 3px;
+}
+
+/* Адаптация для мобильных */
+@media (max-width: 768px) {
+  .main-monitor {
+    width: 98vw;
+    height: 92vh;
+    margin-bottom: 20px;
+  }
+
+  .main-monitor-stand {
+    width: 80px;
+    height: 20px;
+    bottom: -20px;
+  }
+
+  .main-monitor-base {
+    width: 120px;
+    height: 10px;
+    bottom: -30px;
+  }
+}
+
+.terminal-body {
+  position: relative; /* Чтобы позиционирование было внутри тела терминала */
+}
+
+.command-hint {
+  position: absolute;
+  bottom: 5px;       /* можно подправить под желаемое расстояние */
+  left: 20px;         /* то же значение, что и padding у .terminal-body */
+  font-size: 0.8rem;
+  color: rgba(0, 255, 102, 0.6);
+  font-family: 'Perfect DOS VGA 437', monospace;
+}
+
+
+@media (max-width: 480px) {
+  .main-monitor {
+    width: 99vw;
+    height: 94vh;
+  }
+}
+
