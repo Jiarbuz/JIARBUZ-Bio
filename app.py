@@ -6,7 +6,6 @@ import requests
 import os
 import time
 import uuid
-import httpagentparser
 
 # === Загружаем .env ===
 load_dotenv()
@@ -33,13 +32,60 @@ def send_telegram_message(text: str):
     except Exception as e:
         print(f"Ошибка при отправке в Telegram: {e}")
 
+# === Детектор ОС ===
+def detect_os(user_agent: str):
+    ua = user_agent.lower()
+
+    if "windows" in ua:
+        return "Windows"
+    if "mac os" in ua or "macintosh" in ua:
+        return "macOS"
+    if "android" in ua:
+        return "Android"
+    if "iphone" in ua or "ipad" in ua or "ios" in ua:
+        return "iOS"
+    if "linux" in ua and "android" not in ua:
+        return "Linux"
+
+    return "Unknown"
+
+# === Полный детектор браузера ===
+def detect_browser(user_agent: str):
+    ua = user_agent.lower()
+
+    # Порядок важен!
+    if "opr/" in ua or "opera" in ua:
+        return "Opera"
+    if "edg/" in ua:
+        return "Microsoft Edge"
+    if "brave" in ua:
+        return "Brave"
+    if "vivaldi" in ua:
+        return "Vivaldi"
+    if "yabrowser" in ua:
+        return "Yandex Browser"
+    if "samsungbrowser" in ua:
+        return "Samsung Internet"
+    if "chrome" in ua and "chromium" not in ua and "edg" not in ua:
+        return "Google Chrome"
+    if "chromium" in ua:
+        return "Chromium"
+    if "firefox" in ua:
+        return "Mozilla Firefox"
+    if "safari" in ua and "chrome" not in ua:
+        return "Safari"
+    if "msie" in ua or "trident" in ua:
+        return "Internet Explorer"
+
+    return "Unknown"
+
 # === Логгер визитов ===
 @app.before_request
 def log_visitor():
     path = request.path
 
     # Игнорируем служебные и статические запросы
-    if path.startswith("/static") or path in ["/favicon.ico", "/robots.txt", "/sitemap.xml"]:
+    if path.startswith("/static") or path in ["/favicon.ico", "/robots.txt", "/sitemap.xml", "/log"]:
         return
 
     ip = request.headers.get('X-Forwarded-For', request.remote_addr)
@@ -67,10 +113,9 @@ def log_visitor():
         except Exception:
             pass
 
-        # Парсим ОС и браузер
-        parsed = httpagentparser.simple_detect(user_agent)
-        os_name = parsed[0] if parsed and parsed[0] else "Неизвестно"
-        browser_name = parsed[1] if parsed and parsed[1] else "Неизвестно"
+        # Используем наш детектор
+        os_name = detect_os(user_agent)
+        browser_name = detect_browser(user_agent)
 
         message = (
             f"🕒 Время: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
@@ -88,19 +133,18 @@ def log_visitor():
         # Обновляем время активности
         active_visitors[visitor_id]['time'] = now
 
-
 @app.after_request
 def set_cookie_and_remove_server_header(response):
-    # Устанавливаем cookie если новый визит
     if hasattr(g, 'new_visitor_id'):
         response.set_cookie('visitor_id', g.new_visitor_id, max_age=SESSION_TTL)
-    # Убираем заголовок Server
+
     if "Server" in response.headers:
         response.headers.pop("Server")
+
     if hasattr(response, "environ") and "SERVER_SOFTWARE" in response.environ:
         response.environ["SERVER_SOFTWARE"] = ""
-    return response
 
+    return response
 
 register_security_headers(app)
 
@@ -127,13 +171,27 @@ def index():
     response = make_response(render_template('index.html', bio=bio))
     return response
 
+# === Приём логов из других сервисов ===
+@app.route('/log', methods=['POST'])
+def log():
+    data = request.get_json(silent=True)
+    message = data.get('message') if data else None
+
+    if not message:
+        return {"error": "No message provided"}, 400
+
+    try:
+        send_telegram_message(message)
+        return {"status": "ok"}, 200
+    except Exception as e:
+        print(f"Ошибка при отправке: {e}")
+        return {"error": "Internal error"}, 500
 
 @app.route('/robots.txt')
 def robots():
     resp = make_response("User-agent: *\nDisallow:\nSitemap: /sitemap.xml")
     resp.headers["Content-Type"] = "text/plain"
     return resp
-
 
 @app.route('/sitemap.xml')
 def sitemap():
@@ -144,7 +202,6 @@ def sitemap():
     resp = make_response(xml)
     resp.headers["Content-Type"] = "application/xml"
     return resp
-
 
 if __name__ == '__main__':
     cert_path = os.path.join(os.getcwd(), 'certs', 'cert.pem')
