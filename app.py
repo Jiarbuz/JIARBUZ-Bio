@@ -1,7 +1,6 @@
 from flask import Flask, render_template, make_response, request, g
 from security_headers import register_security_headers
 from dotenv import load_dotenv
-from datetime import datetime
 import requests
 import os
 import time
@@ -33,7 +32,7 @@ def send_telegram_message(text: str):
     except Exception as e:
         print(f"Ошибка при отправке в Telegram: {e}")
 
-# === Детектор ОС (новый, короткие категории) ===
+# === Детектор ОС (краткие категории) ===
 def detect_os(user_agent: str):
     ua = user_agent.lower()
 
@@ -55,16 +54,23 @@ def detect_os(user_agent: str):
 def log_visitor():
     path = request.path
 
-    # Игнорируем служебные и статические запросы
+    # Игнорируем служебные запросы
     if path.startswith("/static") or path in ["/favicon.ico", "/robots.txt", "/sitemap.xml", "/log"]:
         return
 
-    ip = request.headers.get('X-Forwarded-For', request.remote_addr)
+    ip_raw = request.headers.get('X-Forwarded-For', request.remote_addr)
+
+    # Берём только первый IP из цепочки (реальный)
+    if ip_raw and "," in ip_raw:
+        ip = ip_raw.split(",")[0].strip()
+    else:
+        ip = ip_raw
+
     user_agent = request.headers.get('User-Agent', 'Неизвестно')
     now = time.time()
     visitor_id = request.cookies.get('visitor_id')
 
-    # Проверяем — новый визит или нет
+    # Новый визит?
     is_new_visit = (
         not visitor_id or
         visitor_id not in active_visitors or
@@ -84,14 +90,14 @@ def log_visitor():
         except Exception:
             pass
 
-        # Определение ОС
+        # ОС
         os_name = detect_os(user_agent)
 
-        # Определение браузера (как раньше!)
+        # Браузер (как раньше!)
         parsed = httpagentparser.simple_detect(user_agent)
         browser_name = parsed[1] if parsed and parsed[1] else "Неизвестно"
 
-        # Формирование Telegram-сообщения (время УДАЛЕНО)
+        # Сообщение в Telegram (без времени!)
         message = (
             f"📡 IP: {ip}\n"
             f"🏙️ Город: {city}\n"
@@ -104,8 +110,8 @@ def log_visitor():
         send_telegram_message(message)
         g.new_visitor_id = visitor_id
     else:
-        # Обновляем время активности
         active_visitors[visitor_id]['time'] = now
+
 
 @app.after_request
 def set_cookie_and_remove_server_header(response):
@@ -119,6 +125,7 @@ def set_cookie_and_remove_server_header(response):
         response.environ["SERVER_SOFTWARE"] = ""
 
     return response
+
 
 register_security_headers(app)
 
@@ -145,7 +152,7 @@ def index():
     response = make_response(render_template('index.html', bio=bio))
     return response
 
-# === Приём логов из других сервисов ===
+# === Приём логов от внешних сервисов ===
 @app.route('/log', methods=['POST'])
 def log():
     data = request.get_json(silent=True)
@@ -161,11 +168,13 @@ def log():
         print(f"Ошибка при отправке: {e}")
         return {"error": "Internal error"}, 500
 
+
 @app.route('/robots.txt')
 def robots():
     resp = make_response("User-agent: *\nDisallow:\nSitemap: /sitemap.xml")
     resp.headers["Content-Type"] = "text/plain"
     return resp
+
 
 @app.route('/sitemap.xml')
 def sitemap():
@@ -176,6 +185,7 @@ def sitemap():
     resp = make_response(xml)
     resp.headers["Content-Type"] = "application/xml"
     return resp
+
 
 if __name__ == '__main__':
     cert_path = os.path.join(os.getcwd(), 'certs', 'cert.pem')
