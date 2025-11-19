@@ -20,6 +20,7 @@ CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 active_visitors = {}
 SESSION_TTL = 1
 
+
 # === Функция отправки в Telegram ===
 def send_telegram_message(text: str):
     if not BOT_TOKEN or not CHAT_ID:
@@ -32,6 +33,7 @@ def send_telegram_message(text: str):
     except Exception as e:
         print(f"Ошибка при отправке в Telegram: {e}")
 
+
 # === Детектор ОС ===
 def detect_os(user_agent: str):
     ua = user_agent.lower()
@@ -41,6 +43,7 @@ def detect_os(user_agent: str):
     if "iphone" in ua or "ipad" in ua or "ios" in ua: return "iOS"
     if "linux" in ua and "android" not in ua: return "Linux"
     return "Unknown"
+
 
 # === Логгер визитов ===
 @app.before_request
@@ -62,9 +65,9 @@ def log_visitor():
     visitor_id = request.cookies.get('visitor_id')
 
     is_new_visit = (
-        not visitor_id or
-        visitor_id not in active_visitors or
-        now - active_visitors[visitor_id]['time'] > SESSION_TTL
+            not visitor_id or
+            visitor_id not in active_visitors or
+            now - active_visitors[visitor_id]['time'] > SESSION_TTL
     )
 
     if is_new_visit:
@@ -82,8 +85,10 @@ def log_visitor():
             "country": "Неизвестно",
             "country_flag": "",
             "os_name": detect_os(user_agent),
-            "browser_name": httpagentparser.simple_detect(user_agent)[1] if httpagentparser.simple_detect(user_agent)[1] else "Неизвестно",
-            "screen_info": None  # сюда клиент пришлёт экран
+            "browser_name": httpagentparser.simple_detect(user_agent)[1] if httpagentparser.simple_detect(user_agent)[
+                1] else "Неизвестно",
+            "screen_info": None,  # сюда клиент пришлёт экран
+            "dpr": None  # сюда клиент пришлёт DPR
         }
 
         # Геолокация
@@ -95,13 +100,14 @@ def log_visitor():
             country_code = geo.get('countryCode', '').upper()
             if country_code:
                 active_visitors[visitor_id]['country_flag'] = chr(ord('🇦') + ord(country_code[0]) - ord('A')) + \
-                                                            chr(ord('🇦') + ord(country_code[1]) - ord('A'))
+                                                              chr(ord('🇦') + ord(country_code[1]) - ord('A'))
         except Exception:
             pass
 
         g.new_visitor_id = visitor_id
     else:
         active_visitors[visitor_id]['time'] = now
+
 
 # === Получение данных экрана с клиента ===
 @app.route('/log_screen', methods=['POST'])
@@ -122,7 +128,19 @@ def log_screen():
 
     v = active_visitors[visitor_id]
     screen = v['screen_info']
-    screen_str = f"🖼️ Разрешение экрана: {screen['width']}x{screen['height']}\n🔍 Масштаб (DPR): {screen['dpr']}"
+
+    # Форматирование информации об экране
+    screen_str = f"🖼️ Разрешение экрана: {screen['width']}x{screen['height']}"
+    dpr_str = f"🔍 Масштаб (DPR): {screen['dpr']}"
+
+    # Определение типа устройства на основе DPR
+    dpr_value = screen['dpr']
+    device_type = "💻 Десктоп"
+    if isinstance(dpr_value, (int, float)):
+        if dpr_value >= 2:
+            device_type = "📱 Мобильное устройство (Retina/High-DPI)"
+        elif dpr_value > 1:
+            device_type = "📱 Мобильное устройство"
 
     message = (
         f"📡 IP: {v['ip']}\n"
@@ -135,11 +153,14 @@ def log_screen():
         f"{v['https_status']}\n"
         f"🌐 Домен: {v['host']}\n"
         f"📍 Страница: {v['path']}\n"
-        f"{screen_str}"
+        f"{screen_str}\n"
+        f"{dpr_str}\n"
+        f"{device_type}"
     )
 
     send_telegram_message(message)
     return {"status": "ok"}, 200
+
 
 # === Установка cookie и очистка заголовков ===
 @app.after_request
@@ -155,7 +176,9 @@ def set_cookie_and_remove_server_header(response):
 
     return response
 
+
 register_security_headers(app)
+
 
 # === Основная страница ===
 @app.route('/')
@@ -173,12 +196,15 @@ def index():
             {"name": "TikTok", "url": "https://www.tiktok.com/@jiarbuz", "icon": "fa-brands fa-tiktok"},
             {"name": "Discord", "url": "https://discord.com/users/971767339282497536", "icon": "fa-brands fa-discord"},
             {"name": "Twitch", "url": "https://www.twitch.tv/jiarbuz228", "icon": "fa-brands fa-twitch"},
-            {"name": "Reddit", "url": "https://www.reddit.com/user/WatermelonJuicy2/", "icon": "fa-brands fa-reddit-alien"},
-            {"name": "Donate", "url": "https://yoomoney.ru/fundraise/1B54G3B36G9.250627", "icon": "fa-solid fa-hand-holding-heart"},
+            {"name": "Reddit", "url": "https://www.reddit.com/user/WatermelonJuicy2/",
+             "icon": "fa-brands fa-reddit-alien"},
+            {"name": "Donate", "url": "https://yoomoney.ru/fundraise/1B54G3B36G9.250627",
+             "icon": "fa-solid fa-hand-holding-heart"},
         ]
     }
     response = make_response(render_template('index.html', bio=bio))
     return response
+
 
 # === Приём логов от внешних сервисов ===
 @app.route('/log', methods=['POST'])
@@ -196,11 +222,13 @@ def log():
         print(f"Ошибка при отправке: {e}")
         return {"error": "Internal error"}, 500
 
+
 @app.route('/robots.txt')
 def robots():
     resp = make_response("User-agent: *\nDisallow:\nSitemap: /sitemap.xml")
     resp.headers["Content-Type"] = "text/plain"
     return resp
+
 
 @app.route('/sitemap.xml')
 def sitemap():
@@ -211,6 +239,7 @@ def sitemap():
     resp = make_response(xml)
     resp.headers["Content-Type"] = "application/xml"
     return resp
+
 
 if __name__ == '__main__':
     cert_path = os.path.join(os.getcwd(), 'certs', 'cert.pem')
