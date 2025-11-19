@@ -55,22 +55,23 @@ def log_visitor():
     path = request.path
 
     # Игнорируем служебные запросы
-    if path.startswith("/static") or path in ["/favicon.ico", "/robots.txt", "/sitemap.xml", "/log"]:
+    if path.startswith("/static") or path in ["/favicon.ico", "/robots.txt", "/sitemap.xml", "/log", "/log_screen"]:
         return
 
     ip_raw = request.headers.get('X-Forwarded-For', request.remote_addr)
-
-    # Берём только первый IP из цепочки (реальный)
     if ip_raw and "," in ip_raw:
         ip = ip_raw.split(",")[0].strip()
     else:
         ip = ip_raw
 
     user_agent = request.headers.get('User-Agent', 'Неизвестно')
+    language = request.headers.get('Accept-Language', 'Неизвестно')
+    host = request.host
+    https_status = "🔐 HTTPS" if request.is_secure else "⚠️ HTTP"
+
     now = time.time()
     visitor_id = request.cookies.get('visitor_id')
 
-    # Новый визит?
     is_new_visit = (
         not visitor_id or
         visitor_id not in active_visitors or
@@ -82,35 +83,41 @@ def log_visitor():
         active_visitors[visitor_id] = {"ip": ip, "time": now}
 
         # Геолокация
-        city, isp = 'Неизвестно', 'Неизвестно'
+        city, isp, country, country_flag = 'Неизвестно', 'Неизвестно', 'Неизвестно', ''
         try:
             geo = requests.get(f"http://ip-api.com/json/{ip}?lang=ru", timeout=2).json()
             city = geo.get('city', city)
             isp = geo.get('isp', isp)
+            country = geo.get('country', country)
+            country_code = geo.get('countryCode', '').upper()
+            if country_code:
+                country_flag = chr(ord('🇦') + ord(country_code[0]) - ord('A')) + chr(ord('🇦') + ord(country_code[1]) - ord('A'))
         except Exception:
             pass
 
-        # ОС
         os_name = detect_os(user_agent)
-
-        # Браузер (как раньше!)
         parsed = httpagentparser.simple_detect(user_agent)
         browser_name = parsed[1] if parsed and parsed[1] else "Неизвестно"
 
-        # Сообщение в Telegram (без времени!)
         message = (
             f"📡 IP: {ip}\n"
             f"🏙️ Город: {city}\n"
+            f"🌎 Страна: {country} {country_flag}\n"
             f"🛜 Провайдер: {isp}\n"
             f"🖥 ОС: {os_name}\n"
             f"🌐 Браузер: {browser_name}\n"
+            f"🗣 Язык: {language}\n"
+            f"{https_status}\n"
+            f"🌐 Домен: {host}\n"
             f"📍 Страница: {path}\n"
+            f"🖼️ Разрешение экрана: будет получено клиентом"
         )
 
         send_telegram_message(message)
         g.new_visitor_id = visitor_id
     else:
         active_visitors[visitor_id]['time'] = now
+
 
 
 @app.after_request
