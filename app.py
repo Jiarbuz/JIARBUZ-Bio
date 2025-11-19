@@ -16,6 +16,9 @@ app = Flask(__name__)
 BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 
+screen_cache = {}
+SCREEN_CACHE_TTL = 5
+
 # === Хранилище сессий ===
 active_visitors = {}
 SESSION_TTL = 1
@@ -96,7 +99,6 @@ def log_visitor():
             active_visitors[visitor_id]['time'] = now
 
     if is_new_visit:
-        visitor_id = str(uuid.uuid4())
         active_visitors[visitor_id] = {"ip": ip, "time": now, "logged": False}
 
     # Геолокация
@@ -123,10 +125,16 @@ def log_visitor():
     resolution = "Неизвестно"
     scale = "Неизвестно"
 
+    if ip in screen_cache:
+        entry = screen_cache[ip]
+        if time.time() - entry["time"] < SCREEN_CACHE_TTL:
+            resolution = entry["resolution"]
+            scale = entry["scale"]
+
     message = (
         f"📡 IP: {ip}\n"
         f"🏙️ Город: {city}\n"
-        f"🌍 Страна: {country_emoji} {country}\n"
+        f"{country_emoji} Страна: {country}\n"
         f"🛜 Провайдер: {isp}\n"
         f"🖥 ОС: {os_name}\n"
         f"🌐 Браузер: {browser_name}\n"
@@ -214,31 +222,27 @@ def screen_info():
         scale = data.get('scale', 1.0)
 
         if width and height:
-            screen_data = f"{width}x{height}"
-            scale_data = f"{scale}"
+            screen_res = f"{width}x{height}"
+            scale_data = str(scale)
 
             ip_raw = request.headers.get('X-Forwarded-For', request.remote_addr)
-            if ip_raw and "," in ip_raw:
-                ip = ip_raw.split(",")[0].strip()
-            else:
-                ip = ip_raw
+            ip = ip_raw.split(",")[0].strip() if ip_raw and "," in ip_raw else ip_raw
 
-            message = (
-                f"📡 IP: {ip}\n"
-                f"📺 Разрешение экрана: {screen_data}\n"
-                f"⚖️ Масштаб: {scale_data}\n"
-                f"🖥 Обновление данных о дисплее"
-            )
+            # Сохраняем в cache
+            screen_cache[ip] = {
+                "resolution": screen_res,
+                "scale": scale_data,
+                "time": time.time()
+            }
 
-            send_telegram_message(message)
-            print(f"📺 Получены данные экрана: {screen_data}, масштаб: {scale_data}")
             return {"status": "success"}, 200
-        else:
-            return {"error": "Invalid screen data"}, 400
+
+        return {"error": "Invalid screen data"}, 400
 
     except Exception as e:
-        print(f"Ошибка при обработке screen_info: {e}")
+        print(f"Ошибка screen_info: {e}")
         return {"error": "Internal error"}, 500
+
 
 
 @app.route('/robots.txt')
