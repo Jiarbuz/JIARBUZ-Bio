@@ -20,7 +20,6 @@ CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 active_visitors = {}
 SESSION_TTL = 1
 
-
 # === Функция отправки в Telegram ===
 def send_telegram_message(text: str):
     if not BOT_TOKEN or not CHAT_ID:
@@ -33,136 +32,87 @@ def send_telegram_message(text: str):
     except Exception as e:
         print(f"Ошибка при отправке в Telegram: {e}")
 
-
-# === Детектор ОС ===
+# === Детектор ОС (краткие категории) ===
 def detect_os(user_agent: str):
     ua = user_agent.lower()
-    if "windows" in ua: return "Windows"
-    if "mac os" in ua or "macintosh" in ua: return "macOS"
-    if "android" in ua: return "Android"
-    if "iphone" in ua or "ipad" in ua or "ios" in ua: return "iOS"
-    if "linux" in ua and "android" not in ua: return "Linux"
-    return "Unknown"
 
+    if "windows" in ua:
+        return "Windows"
+    if "mac os" in ua or "macintosh" in ua:
+        return "macOS"
+    if "android" in ua:
+        return "Android"
+    if "iphone" in ua or "ipad" in ua or "ios" in ua:
+        return "iOS"
+    if "linux" in ua and "android" not in ua:
+        return "Linux"
+
+    return "Unknown"
 
 # === Логгер визитов ===
 @app.before_request
 def log_visitor():
     path = request.path
 
-    if path.startswith("/static") or path in ["/favicon.ico", "/robots.txt", "/sitemap.xml", "/log", "/log_screen"]:
+    # Игнорируем служебные запросы
+    if path.startswith("/static") or path in ["/favicon.ico", "/robots.txt", "/sitemap.xml", "/log"]:
         return
 
     ip_raw = request.headers.get('X-Forwarded-For', request.remote_addr)
-    ip = ip_raw.split(",")[0].strip() if ip_raw and "," in ip_raw else ip_raw
+
+    # Берём только первый IP из цепочки (реальный)
+    if ip_raw and "," in ip_raw:
+        ip = ip_raw.split(",")[0].strip()
+    else:
+        ip = ip_raw
 
     user_agent = request.headers.get('User-Agent', 'Неизвестно')
-    language = request.headers.get('Accept-Language', 'Неизвестно')
-    host = request.host
-    https_status = "🔐 HTTPS" if request.is_secure else "⚠️ HTTP"
-
     now = time.time()
     visitor_id = request.cookies.get('visitor_id')
 
+    # Новый визит?
     is_new_visit = (
-            not visitor_id or
-            visitor_id not in active_visitors or
-            now - active_visitors[visitor_id]['time'] > SESSION_TTL
+        not visitor_id or
+        visitor_id not in active_visitors or
+        now - active_visitors[visitor_id]['time'] > SESSION_TTL
     )
 
     if is_new_visit:
         visitor_id = str(uuid.uuid4())
-        active_visitors[visitor_id] = {
-            "ip": ip,
-            "time": now,
-            "user_agent": user_agent,
-            "language": language,
-            "host": host,
-            "https_status": https_status,
-            "path": path,
-            "city": "Неизвестно",
-            "isp": "Неизвестно",
-            "country": "Неизвестно",
-            "country_flag": "",
-            "os_name": detect_os(user_agent),
-            "browser_name": httpagentparser.simple_detect(user_agent)[1] if httpagentparser.simple_detect(user_agent)[
-                1] else "Неизвестно",
-            "screen_info": None,  # сюда клиент пришлёт экран
-            "dpr": None  # сюда клиент пришлёт DPR
-        }
+        active_visitors[visitor_id] = {"ip": ip, "time": now}
 
         # Геолокация
+        city, isp = 'Неизвестно', 'Неизвестно'
         try:
             geo = requests.get(f"http://ip-api.com/json/{ip}?lang=ru", timeout=2).json()
-            active_visitors[visitor_id]['city'] = geo.get('city', 'Неизвестно')
-            active_visitors[visitor_id]['isp'] = geo.get('isp', 'Неизвестно')
-            active_visitors[visitor_id]['country'] = geo.get('country', 'Неизвестно')
-            country_code = geo.get('countryCode', '').upper()
-            if country_code:
-                active_visitors[visitor_id]['country_flag'] = chr(ord('🇦') + ord(country_code[0]) - ord('A')) + \
-                                                              chr(ord('🇦') + ord(country_code[1]) - ord('A'))
+            city = geo.get('city', city)
+            isp = geo.get('isp', isp)
         except Exception:
             pass
 
+        # ОС
+        os_name = detect_os(user_agent)
+
+        # Браузер (как раньше!)
+        parsed = httpagentparser.simple_detect(user_agent)
+        browser_name = parsed[1] if parsed and parsed[1] else "Неизвестно"
+
+        # Сообщение в Telegram (без времени!)
+        message = (
+            f"📡 IP: {ip}\n"
+            f"🏙️ Город: {city}\n"
+            f"🛜 Провайдер: {isp}\n"
+            f"🖥 ОС: {os_name}\n"
+            f"🌐 Браузер: {browser_name}\n"
+            f"📍 Страница: {path}\n"
+        )
+
+        send_telegram_message(message)
         g.new_visitor_id = visitor_id
     else:
         active_visitors[visitor_id]['time'] = now
 
 
-# === Получение данных экрана с клиента ===
-@app.route('/log_screen', methods=['POST'])
-def log_screen():
-    data = request.get_json(silent=True)
-    if not data:
-        return {"error": "No data"}, 400
-
-    visitor_id = request.cookies.get('visitor_id')
-    if not visitor_id or visitor_id not in active_visitors:
-        return {"error": "No visitor_id"}, 400
-
-    active_visitors[visitor_id]['screen_info'] = {
-        "width": data.get('width', 'Неизвестно'),
-        "height": data.get('height', 'Неизвестно'),
-        "dpr": data.get('dpr', 'Неизвестно')
-    }
-
-    v = active_visitors[visitor_id]
-    screen = v['screen_info']
-
-    # Форматирование информации об экране
-    screen_str = f"🖼️ Разрешение экрана: {screen['width']}x{screen['height']}"
-    dpr_str = f"🔍 Масштаб (DPR): {screen['dpr']}"
-
-    # Определение типа устройства на основе DPR
-    dpr_value = screen['dpr']
-    device_type = "💻 Десктоп"
-    if isinstance(dpr_value, (int, float)):
-        if dpr_value >= 2:
-            device_type = "📱 Мобильное устройство (Retina/High-DPI)"
-        elif dpr_value > 1:
-            device_type = "📱 Мобильное устройство"
-
-    message = (
-        f"📡 IP: {v['ip']}\n"
-        f"🏙️ Город: {v['city']}\n"
-        f"🌎 Страна: {v['country']} {v['country_flag']}\n"
-        f"🛜 Провайдер: {v['isp']}\n"
-        f"🖥 ОС: {v['os_name']}\n"
-        f"🌐 Браузер: {v['browser_name']}\n"
-        f"🗣 Язык: {v['language']}\n"
-        f"{v['https_status']}\n"
-        f"🌐 Домен: {v['host']}\n"
-        f"📍 Страница: {v['path']}\n"
-        f"{screen_str}\n"
-        f"{dpr_str}\n"
-        f"{device_type}"
-    )
-
-    send_telegram_message(message)
-    return {"status": "ok"}, 200
-
-
-# === Установка cookie и очистка заголовков ===
 @app.after_request
 def set_cookie_and_remove_server_header(response):
     if hasattr(g, 'new_visitor_id'):
@@ -178,7 +128,6 @@ def set_cookie_and_remove_server_header(response):
 
 
 register_security_headers(app)
-
 
 # === Основная страница ===
 @app.route('/')
@@ -196,15 +145,12 @@ def index():
             {"name": "TikTok", "url": "https://www.tiktok.com/@jiarbuz", "icon": "fa-brands fa-tiktok"},
             {"name": "Discord", "url": "https://discord.com/users/971767339282497536", "icon": "fa-brands fa-discord"},
             {"name": "Twitch", "url": "https://www.twitch.tv/jiarbuz228", "icon": "fa-brands fa-twitch"},
-            {"name": "Reddit", "url": "https://www.reddit.com/user/WatermelonJuicy2/",
-             "icon": "fa-brands fa-reddit-alien"},
-            {"name": "Donate", "url": "https://yoomoney.ru/fundraise/1B54G3B36G9.250627",
-             "icon": "fa-solid fa-hand-holding-heart"},
+            {"name": "Reddit", "url": "https://www.reddit.com/user/WatermelonJuicy2/", "icon": "fa-brands fa-reddit-alien"},
+            {"name": "Donate", "url": "https://yoomoney.ru/fundraise/1B54G3B36G9.250627", "icon": "fa-solid fa-hand-holding-heart"},
         ]
     }
     response = make_response(render_template('index.html', bio=bio))
     return response
-
 
 # === Приём логов от внешних сервисов ===
 @app.route('/log', methods=['POST'])
