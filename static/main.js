@@ -498,6 +498,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         updateUptime();
         updateResolution();
+        sendScreenInfo();
         setInterval(updateUptime, 1000);
 
         // --- BIOS загрузочные строки ---

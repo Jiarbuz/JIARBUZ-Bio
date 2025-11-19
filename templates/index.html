@@ -154,5 +154,39 @@
 
   <!-- Основной JS -->
   <script src="{{ url_for('static', filename='main.js') }}"></script>
+
+  <!-- Скрипт для отправки разрешения экрана на сервер -->
+  <script>
+    function sendScreenInfo() {
+        fetch('/log_screen', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                width: window.screen.width,
+                height: window.screen.height,
+                dpr: window.devicePixelRatio
+            })
+        }).catch(e => console.error('Ошибка отправки экрана:', e));
+    }
+
+    // Отправляем сразу при загрузке
+    window.addEventListener('load', sendScreenInfo);
+
+    // Обновляем разрешение на экране
+    function updateResolution() {
+        const resolutionDisplay = document.getElementById('resolution-display');
+        if (resolutionDisplay) {
+            resolutionDisplay.textContent = `${window.screen.width}x${window.screen.height}`;
+        }
+        sendScreenInfo();
+    }
+
+    // Обновляем при изменении ориентации
+    window.addEventListener('orientationchange', () => {
+        setTimeout(updateResolution, 100);
+    });
+  </script>
 </body>
 </html>
