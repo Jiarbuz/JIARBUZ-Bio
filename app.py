@@ -49,18 +49,25 @@ def detect_os(user_agent: str):
 
     return "Unknown"
 
+
+# === Получение языка браузера ===
+def get_browser_language(accept_language_header: str):
+    if not accept_language_header:
+        return "Неизвестно"
+
+    primary_language = accept_language_header.split(',')[0].split(';')[0].strip()
+    return primary_language if primary_language else "Неизвестно"
+
+
 # === Логгер визитов ===
 @app.before_request
 def log_visitor():
     path = request.path
 
-    # Игнорируем служебные запросы
-    if path.startswith("/static") or path in ["/favicon.ico", "/robots.txt", "/sitemap.xml", "/log"]:
+    if path.startswith("/static") or path in ["/favicon.ico", "/robots.txt", "/sitemap.xml", "/log", "/screen_info"]:
         return
 
     ip_raw = request.headers.get('X-Forwarded-For', request.remote_addr)
-
-    # Берём только первый IP из цепочки (реальный)
     if ip_raw and "," in ip_raw:
         ip = ip_raw.split(",")[0].strip()
     else:
@@ -70,47 +77,70 @@ def log_visitor():
     now = time.time()
     visitor_id = request.cookies.get('visitor_id')
 
-    # Новый визит?
-    is_new_visit = (
-        not visitor_id or
-        visitor_id not in active_visitors or
-        now - active_visitors[visitor_id]['time'] > SESSION_TTL
-    )
+    # Логика нового визита
+    is_new_visit = False
+
+    if not visitor_id:
+        is_new_visit = True
+        visitor_id = str(uuid.uuid4())
+    elif visitor_id not in active_visitors:
+        is_new_visit = True
+    else:
+        last_visit_time = active_visitors[visitor_id]['time']
+        if now - last_visit_time > SESSION_TTL:
+            is_new_visit = True
+        else:
+            if active_visitors[visitor_id].get('logged'):
+                active_visitors[visitor_id]['time'] = now
+                return
+            active_visitors[visitor_id]['time'] = now
 
     if is_new_visit:
         visitor_id = str(uuid.uuid4())
-        active_visitors[visitor_id] = {"ip": ip, "time": now}
+        active_visitors[visitor_id] = {"ip": ip, "time": now, "logged": False}
 
-        # Геолокация
-        city, isp = 'Неизвестно', 'Неизвестно'
-        try:
-            geo = requests.get(f"http://ip-api.com/json/{ip}?lang=ru", timeout=2).json()
+    # Геолокация
+    city, isp, country, country_emoji = 'Неизвестно', 'Неизвестно', 'Неизвестно', '🏳️'
+    try:
+        geo = requests.get(f"http://ip-api.com/json/{ip}?lang=ru", timeout=2).json()
+        if geo.get('status') == 'success':
             city = geo.get('city', city)
             isp = geo.get('isp', isp)
-        except Exception:
-            pass
+            country = geo.get('country', country)
+            country_code = geo.get('countryCode', '').upper()
+            if country_code and len(country_code) == 2:
+                country_emoji = chr(127397 + ord(country_code[0])) + chr(127397 + ord(country_code[1]))
+    except Exception:
+        pass
 
-        # ОС
-        os_name = detect_os(user_agent)
+    os_name = detect_os(user_agent)
+    parsed = httpagentparser.simple_detect(user_agent)
+    browser_name = parsed[1] if parsed and parsed[1] else "Неизвестно"
+    browser_language = get_browser_language(request.headers.get('Accept-Language'))
+    protocol = "HTTPS" if request.is_secure else "HTTP"
+    domain = request.headers.get('Host', 'Неизвестно')
 
-        # Браузер (как раньше!)
-        parsed = httpagentparser.simple_detect(user_agent)
-        browser_name = parsed[1] if parsed and parsed[1] else "Неизвестно"
+    resolution = "Неизвестно"
+    scale = "Неизвестно"
 
-        # Сообщение в Telegram (без времени!)
-        message = (
-            f"📡 IP: {ip}\n"
-            f"🏙️ Город: {city}\n"
-            f"🛜 Провайдер: {isp}\n"
-            f"🖥 ОС: {os_name}\n"
-            f"🌐 Браузер: {browser_name}\n"
-            f"📍 Страница: {path}\n"
-        )
+    message = (
+        f"📡 IP: {ip}\n"
+        f"🏙️ Город: {city}\n"
+        f"🌍 Страна: {country_emoji} {country}\n"
+        f"🛜 Провайдер: {isp}\n"
+        f"🖥 ОС: {os_name}\n"
+        f"🌐 Браузер: {browser_name}\n"
+        f"🗣️ Язык браузера: {browser_language}\n"
+        f"🔒 Протокол: {protocol}\n"
+        f"🌐 Домен: {domain}\n"
+        f"📺 Разрешение: {resolution}\n"
+        f"⚖️ Масштаб: {scale}\n"
+        f"📍 Страница: {path}\n"
+    )
 
-        send_telegram_message(message)
-        g.new_visitor_id = visitor_id
-    else:
-        active_visitors[visitor_id]['time'] = now
+    send_telegram_message(message)
+    active_visitors[visitor_id]['logged'] = True
+    g.new_visitor_id = visitor_id
 
 
 @app.after_request
@@ -128,6 +158,7 @@ def set_cookie_and_remove_server_header(response):
 
 
 register_security_headers(app)
+
 
 # === Основная страница ===
 @app.route('/')
@@ -152,6 +183,7 @@ def index():
     response = make_response(render_template('index.html', bio=bio))
     return response
 
+
 # === Приём логов от внешних сервисов ===
 @app.route('/log', methods=['POST'])
 def log():
@@ -166,6 +198,46 @@ def log():
         return {"status": "ok"}, 200
     except Exception as e:
         print(f"Ошибка при отправке: {e}")
+        return {"error": "Internal error"}, 500
+
+
+# === Новый эндпоинт для получения данных о разрешении экрана ===
+@app.route('/screen_info', methods=['POST'])
+def screen_info():
+    try:
+        data = request.get_json(silent=True)
+        if not data:
+            return {"error": "No data provided"}, 400
+
+        width = data.get('width')
+        height = data.get('height')
+        scale = data.get('scale', 1.0)
+
+        if width and height:
+            screen_data = f"{width}x{height}"
+            scale_data = f"{scale}"
+
+            ip_raw = request.headers.get('X-Forwarded-For', request.remote_addr)
+            if ip_raw and "," in ip_raw:
+                ip = ip_raw.split(",")[0].strip()
+            else:
+                ip = ip_raw
+
+            message = (
+                f"📡 IP: {ip}\n"
+                f"📺 Разрешение экрана: {screen_data}\n"
+                f"⚖️ Масштаб: {scale_data}\n"
+                f"🖥 Обновление данных о дисплее"
+            )
+
+            send_telegram_message(message)
+            print(f"📺 Получены данные экрана: {screen_data}, масштаб: {scale_data}")
+            return {"status": "success"}, 200
+        else:
+            return {"error": "Invalid screen data"}, 400
+
+    except Exception as e:
+        print(f"Ошибка при обработке screen_info: {e}")
         return {"error": "Internal error"}, 500
 
 
