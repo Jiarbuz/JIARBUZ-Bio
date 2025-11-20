@@ -120,188 +120,546 @@ function shutdownSystem() {
     }, 100);
 }
 
-// ================= DEVICE INFO =================
-async function getGPU() {
-    try {
-        const canvas = document.createElement('canvas');
-        const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
-        if (!gl) return "Unknown GPU";
-        const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
-        if (debugInfo) return gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
-        return "WebGL GPU Hidden";
-    } catch { return "GPU read error"; }
-}
+// ================= РАСШИРЕННЫЙ СБОР ДАННЫХ УСТРОЙСТВА =================
 
-function getCPU() {
-    const cores = navigator.hardwareConcurrency || "Unknown";
-    const ua = navigator.userAgent;
-    return `${cores} threads | UA: ${ua}`;
-}
+// 1. Основная информация о устройстве и браузере
+async function getEnhancedDeviceInfo() {
+    const info = {
+        // Базовые данные
+        userAgent: navigator.userAgent,
+        appVersion: navigator.appVersion,
+        vendor: navigator.vendor || 'Неизвестно',
+        language: navigator.language,
+        languages: navigator.languages || [],
+        platform: navigator.platform,
 
-async function getBatteryInfo() {
-    try {
-        const b = await navigator.getBattery();
-        return `Level: ${(b.level * 100).toFixed(0)}%, Charging: ${b.charging}`;
-    } catch { return "Battery API not supported"; }
-}
+        // Современный User Agent Data
+        userAgentData: null,
 
-function getMemory() {
-    return navigator.deviceMemory ? `${navigator.deviceMemory} GB RAM` : "Unknown RAM";
-}
+        // Аппаратные характеристики
+        hardwareConcurrency: navigator.hardwareConcurrency,
+        deviceMemory: navigator.deviceMemory,
+        maxTouchPoints: navigator.maxTouchPoints || 0
+    };
 
-function getHeap() {
-    if (performance && performance.memory) {
-        return `Heap: ${Math.round(performance.memory.usedJSHeapSize / 1048576)}MB / ${Math.round(performance.memory.jsHeapSizeLimit / 1048576)}MB`;
-    }
-    return "No JS Heap Data";
-}
-
-function getScreenInfo() {
-    return `${screen.width}x${screen.height} | DPR: ${window.devicePixelRatio}`;
-}
-
-function getCanvasFingerprint() {
-    const c = document.createElement("canvas");
-    const ctx = c.getContext("2d");
-    ctx.textBaseline = "top";
-    ctx.font = "14px 'Arial'";
-    ctx.fillText("fingerprint-test-12345", 2, 2);
-    return c.toDataURL();
-}
-
-function getWebGLFingerprint() {
-    const c = document.createElement("canvas");
-    const gl = c.getContext("webgl");
-    if (!gl) return "no-webgl";
-    return gl.getSupportedExtensions().join(",");
-}
-
-async function getAudioFingerprint() {
-    try {
-        const ctx = new (window.AudioContext || window.webkitAudioContext)();
-        const osc = ctx.createOscillator();
-        const analyser = ctx.createAnalyser();
-        osc.connect(analyser);
-        osc.start(0);
-        const arr = new Uint8Array(analyser.frequencyBinCount);
-        analyser.getByteFrequencyData(arr);
-        osc.stop();
-        return arr.slice(0, 32).join("-");
-    } catch { return "audio-error"; }
-}
-
-// Вспомогательные функции для сбора данных устройства
-async function getWebGLVendor() {
-    try {
-        const canvas = document.createElement('canvas');
-        const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
-        if (!gl) return "Неизвестно";
-        const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
-        if (debugInfo) return gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL) || "Неизвестно";
-        return "WebGL Vendor Hidden";
-    } catch { return "Неизвестно"; }
-}
-
-async function getWebGLRenderer() {
-    try {
-        const canvas = document.createElement('canvas');
-        const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
-        if (!gl) return "Неизвестно";
-        const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
-        if (debugInfo) return gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) || "Неизвестно";
-        return "WebGL Renderer Hidden";
-    } catch { return "Неизвестно"; }
-}
-
-function getPluginsInfo() {
-    try {
-        if (navigator.plugins && navigator.plugins.length > 0) {
-            return Array.from(navigator.plugins).map(p => p.name).join(', ');
+    // User Agent Data (современные браузеры)
+    if (navigator.userAgentData) {
+        try {
+            info.userAgentData = {
+                brands: navigator.userAgentData.brands,
+                mobile: navigator.userAgentData.mobile,
+                platform: navigator.userAgentData.platform
+            };
+        } catch (e) {
+            console.log('UserAgentData error:', e);
         }
-        return "Неизвестно";
-    } catch { return "Неизвестно"; }
+    }
+
+    return info;
 }
 
-async function generateFingerprint() {
+// 2. Экран и графика
+async function getEnhancedScreenInfo() {
+    const screenInfo = {
+        // Базовые параметры экрана
+        width: screen.width,
+        height: screen.height,
+        availWidth: screen.availWidth,
+        availHeight: screen.availHeight,
+        colorDepth: screen.colorDepth,
+        pixelDepth: screen.pixelDepth,
+        devicePixelRatio: window.devicePixelRatio,
+
+        // Ориентация
+        orientation: {
+            type: screen.orientation?.type || 'unknown',
+            angle: screen.orientation?.angle || 0
+        },
+
+        // Позиция окна (мультимонитор)
+        screenLeft: window.screenLeft,
+        screenTop: window.screenTop,
+        screenX: window.screenX,
+        screenY: window.screenY,
+
+        // Размеры окна
+        innerWidth: window.innerWidth,
+        innerHeight: window.innerHeight,
+        outerWidth: window.outerWidth,
+        outerHeight: window.outerHeight,
+
+        // Прокрутка
+        scrollX: window.scrollX,
+        scrollY: window.scrollY
+    };
+
+    return screenInfo;
+}
+
+// WebGL информация
+async function getEnhancedWebGLInfo() {
     try {
-        const components = {
-            userAgent: navigator.userAgent,
-            language: navigator.language,
-            platform: navigator.platform,
-            hardwareConcurrency: navigator.hardwareConcurrency,
-            deviceMemory: navigator.deviceMemory,
-            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-            screen: `${screen.width}x${screen.height}`,
-            colorDepth: screen.colorDepth,
-            pixelRatio: window.devicePixelRatio
+        const canvas = document.createElement('canvas');
+        const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+
+        if (!gl) return { supported: false };
+
+        const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+        const vendor = debugInfo ? gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL) : 'Unknown';
+        const renderer = debugInfo ? gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) : 'Unknown';
+
+        // Получаем все расширения WebGL
+        const extensions = gl.getSupportedExtensions() || [];
+
+        // Дополнительные параметры WebGL
+        const parameters = {
+            VERSION: gl.getParameter(gl.VERSION),
+            SHADING_LANGUAGE_VERSION: gl.getParameter(gl.SHADING_LANGUAGE_VERSION),
+            MAX_TEXTURE_SIZE: gl.getParameter(gl.MAX_TEXTURE_SIZE),
+            MAX_VIEWPORT_DIMS: gl.getParameter(gl.MAX_VIEWPORT_DIMS)
         };
 
-        const str = JSON.stringify(components);
-        const buffer = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
-        return Array.from(new Uint8Array(buffer)).map(b => b.toString(16).padStart(2, '0')).join('');
-    } catch { return "fingerprint-error"; }
+        return {
+            supported: true,
+            vendor,
+            renderer,
+            extensions: extensions.slice(0, 20), // Ограничиваем количество
+            parameters
+        };
+    } catch (error) {
+        return { supported: false, error: error.message };
+    }
 }
 
-async function collectAndSendDeviceInfo() {
-    try {
-        console.log('Сбор данных устройства...');
+// 3. Аудио и мультимедиа
+async function getEnhancedAudioInfo() {
+    const audioInfo = {
+        // Поддержка Web Audio API
+        webAudioSupported: !!(window.AudioContext || window.webkitAudioContext),
 
-        // Собираем данные об устройстве
-        const deviceData = {
-            width: screen.width,
-            height: screen.height,
-            scale: window.devicePixelRatio || 1,
-            webgl_vendor: await getWebGLVendor(),
-            webgl_renderer: await getWebGLRenderer(),
-            hardwareConcurrency: navigator.hardwareConcurrency || "Неизвестно",
-            deviceMemory: navigator.deviceMemory || "Неизвестно",
-            platform: navigator.platform || "Неизвестно",
-            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "Неизвестно",
-            language: navigator.language || "Неизвестно",
-            plugins: getPluginsInfo(),
-            fingerprint: await generateFingerprint()
+        // Устройства медиа
+        mediaDevices: [],
+
+        // Аудио фингерпринт
+        audioFingerprint: null
+    };
+
+    // Получаем медиа устройства
+    if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
+        try {
+            const devices = await navigator.mediaDevices.enumerateDevices();
+            audioInfo.mediaDevices = devices.map(device => ({
+                kind: device.kind,
+                label: device.label,
+                deviceId: device.deviceId
+            }));
+        } catch (error) {
+            console.log('Media devices error:', error);
+        }
+    }
+
+    // Улучшенный аудио фингерпринт
+    audioInfo.audioFingerprint = await getEnhancedAudioFingerprint();
+
+    return audioInfo;
+}
+
+async function getEnhancedAudioFingerprint() {
+    if (!window.AudioContext && !window.webkitAudioContext) {
+        return "audio-unsupported";
+    }
+
+    try {
+        const context = new (window.AudioContext || window.webkitAudioContext)();
+        const oscillator = context.createOscillator();
+        const gain = context.createGain();
+        const analyser = context.createAnalyser();
+
+        oscillator.connect(gain);
+        gain.connect(analyser);
+        analyser.connect(context.destination);
+
+        // Разные частоты для лучшего фингерпринтинга
+        oscillator.frequency.setValueAtTime(440, context.currentTime);
+        gain.gain.setValueAtTime(0.5, context.currentTime);
+
+        oscillator.start();
+
+        const frequencies = new Uint8Array(analyser.frequencyBinCount);
+        const times = new Uint8Array(analyser.frequencyBinCount);
+
+        analyser.getByteFrequencyData(frequencies);
+        analyser.getByteTimeDomainData(times);
+
+        oscillator.stop();
+
+        // Комбинируем данные для уникального фингерпринта
+        const combined = [
+            ...Array.from(frequencies).slice(0, 16),
+            ...Array.from(times).slice(0, 16)
+        ];
+
+        return combined.join('-');
+    } catch (error) {
+        return "audio-error";
+    }
+}
+
+// 4. Сеть
+async function getNetworkInfo() {
+    const networkInfo = {
+        online: navigator.onLine,
+        connection: null,
+        // IP через WebRTC будет получен отдельно
+    };
+
+    // Network Information API
+    if (navigator.connection) {
+        networkInfo.connection = {
+            effectiveType: navigator.connection.effectiveType,
+            downlink: navigator.connection.downlink,
+            rtt: navigator.connection.rtt,
+            saveData: navigator.connection.saveData
+        };
+    }
+
+    return networkInfo;
+}
+
+// 5. Производительность и память
+async function getPerformanceInfo() {
+    const perfInfo = {
+        timing: null,
+        memory: null,
+        resources: null,
+        navigation: null,
+        fps: await estimateFPS()
+    };
+
+    // Performance Timing API
+    if (performance.timing) {
+        perfInfo.timing = {
+            loadEventEnd: performance.timing.loadEventEnd,
+            domComplete: performance.timing.domComplete,
+            domInteractive: performance.timing.domInteractive
+        };
+    }
+
+    // Performance Memory API
+    if (performance.memory) {
+        perfInfo.memory = {
+            usedJSHeapSize: Math.round(performance.memory.usedJSHeapSize / 1048576),
+            totalJSHeapSize: Math.round(performance.memory.totalJSHeapSize / 1048576),
+            jsHeapSizeLimit: Math.round(performance.memory.jsHeapSizeLimit / 1048576)
+        };
+    }
+
+    // Performance Resources
+    try {
+        const resources = performance.getEntriesByType('resource');
+        perfInfo.resources = {
+            count: resources.length,
+            totalSize: resources.reduce((sum, resource) => sum + (resource.transferSize || 0), 0)
+        };
+    } catch (e) {
+        console.log('Performance resources error:', e);
+    }
+
+    // Performance Navigation
+    try {
+        const navigation = performance.getEntriesByType('navigation')[0];
+        if (navigation) {
+            perfInfo.navigation = {
+                domContentLoaded: Math.round(navigation.domContentLoadedEventEnd - navigation.fetchStart),
+                loadComplete: Math.round(navigation.loadEventEnd - navigation.fetchStart)
+            };
+        }
+    } catch (e) {
+        console.log('Performance navigation error:', e);
+    }
+
+    return perfInfo;
+}
+
+// Оценка FPS
+async function estimateFPS() {
+    return new Promise(resolve => {
+        let frames = 0;
+        const start = performance.now();
+
+        function countFrame() {
+            frames++;
+            if (performance.now() - start < 1000) {
+                requestAnimationFrame(countFrame);
+            } else {
+                resolve(frames);
+            }
+        }
+
+        requestAnimationFrame(countFrame);
+    });
+}
+
+// 6. Сенсоры (для мобильных устройств)
+async function getSensorInfo() {
+    const sensorInfo = {
+        deviceOrientation: null,
+        deviceMotion: null,
+        touchSupport: 'ontouchstart' in window || navigator.maxTouchPoints > 0
+    };
+
+    return new Promise(resolve => {
+        // Device Orientation
+        if (window.DeviceOrientationEvent) {
+            const orientationHandler = (event) => {
+                sensorInfo.deviceOrientation = {
+                    alpha: event.alpha,
+                    beta: event.beta,
+                    gamma: event.gamma
+                };
+                window.removeEventListener('deviceorientation', orientationHandler);
+                checkSensorsComplete();
+            };
+            window.addEventListener('deviceorientation', orientationHandler, { once: true });
+        }
+
+        // Device Motion
+        if (window.DeviceMotionEvent) {
+            const motionHandler = (event) => {
+                sensorInfo.deviceMotion = {
+                    acceleration: event.acceleration,
+                    accelerationIncludingGravity: event.accelerationIncludingGravity,
+                    rotationRate: event.rotationRate
+                };
+                window.removeEventListener('devicemotion', motionHandler);
+                checkSensorsComplete();
+            };
+            window.addEventListener('devicemotion', motionHandler, { once: true });
+        }
+
+        let sensorsChecked = 0;
+        function checkSensorsComplete() {
+            sensorsChecked++;
+            if (sensorsChecked >= 2 || (!window.DeviceOrientationEvent && !window.DeviceMotionEvent)) {
+                resolve(sensorInfo);
+            }
+        }
+
+        // Таймаут для сенсоров
+        setTimeout(() => {
+            resolve(sensorInfo);
+        }, 1000);
+    });
+}
+
+// 7. Хранилища браузера
+async function getStorageInfo() {
+    const storageInfo = {
+        localStorage: null,
+        sessionStorage: null,
+        indexedDB: null,
+        cookies: null
+    };
+
+    try {
+        // LocalStorage
+        storageInfo.localStorage = {
+            keys: Object.keys(localStorage),
+            length: localStorage.length
+        };
+    } catch (e) {
+        console.log('LocalStorage error:', e);
+    }
+
+    try {
+        // SessionStorage
+        storageInfo.sessionStorage = {
+            keys: Object.keys(sessionStorage),
+            length: sessionStorage.length
+        };
+    } catch (e) {
+        console.log('SessionStorage error:', e);
+    }
+
+    try {
+        // IndexedDB
+        if (window.indexedDB && indexedDB.databases) {
+            const databases = await indexedDB.databases();
+            storageInfo.indexedDB = {
+                databaseNames: databases.map(db => db.name)
+            };
+        }
+    } catch (e) {
+        console.log('IndexedDB error:', e);
+    }
+
+    try {
+        // Cookies
+        storageInfo.cookies = document.cookie ? document.cookie.split(';').length : 0;
+    } catch (e) {
+        console.log('Cookies error:', e);
+    }
+
+    return storageInfo;
+}
+
+// 8. Интерфейс и пользовательские действия
+async function getUIInfo() {
+    return {
+        hasFocus: document.hasFocus(),
+        visibilityState: document.visibilityState,
+        hidden: document.hidden,
+        // Дополнительные UI данные будут собираться в реальном времени
+    };
+}
+
+// 9. Улучшенный фингерпринтинг
+async function generateEnhancedFingerprint(allData) {
+    try {
+        // Комбинируем все данные для создания уникального фингерпринта
+        const fingerprintData = {
+            userAgent: allData.deviceInfo.userAgent,
+            language: allData.deviceInfo.language,
+            platform: allData.deviceInfo.platform,
+            hardwareConcurrency: allData.deviceInfo.hardwareConcurrency,
+            deviceMemory: allData.deviceInfo.deviceMemory,
+            screen: `${allData.screenInfo.width}x${allData.screenInfo.height}`,
+            colorDepth: allData.screenInfo.colorDepth,
+            pixelRatio: allData.screenInfo.devicePixelRatio,
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+            webglVendor: allData.webglInfo.vendor,
+            webglRenderer: allData.webglInfo.renderer,
+            audioFingerprint: allData.audioInfo.audioFingerprint
+        };
+
+        const str = JSON.stringify(fingerprintData, Object.keys(fingerprintData).sort());
+        const buffer = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+        return Array.from(new Uint8Array(buffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+    } catch (error) {
+        return "fingerprint-error";
+    }
+}
+
+// 10. Главная функция сбора всех данных
+async function collectAllDeviceData() {
+    console.log('🛠️ Начало сбора расширенных данных устройства...');
+
+    try {
+        // Собираем все данные параллельно для скорости
+        const [
+            deviceInfo,
+            screenInfo,
+            webglInfo,
+            audioInfo,
+            networkInfo,
+            performanceInfo,
+            sensorInfo,
+            storageInfo,
+            uiInfo
+        ] = await Promise.all([
+            getEnhancedDeviceInfo(),
+            getEnhancedScreenInfo(),
+            getEnhancedWebGLInfo(),
+            getEnhancedAudioInfo(),
+            getNetworkInfo(),
+            getPerformanceInfo(),
+            getSensorInfo(),
+            getStorageInfo(),
+            getUIInfo()
+        ]);
+
+        // Генерируем финальный фингерпринт
+        const allData = {
+            deviceInfo,
+            screenInfo,
+            webglInfo,
+            audioInfo,
+            networkInfo,
+            performanceInfo,
+            sensorInfo,
+            storageInfo,
+            uiInfo,
+            timestamp: new Date().toISOString(),
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+        };
+
+        const enhancedFingerprint = await generateEnhancedFingerprint(allData);
+        allData.enhancedFingerprint = enhancedFingerprint;
+
+        console.log('✅ Все данные успешно собраны');
+        return allData;
+
+    } catch (error) {
+        console.error('❌ Ошибка при сборе данных:', error);
+        return { error: error.message };
+    }
+}
+
+// Отправка данных на сервер
+async function sendEnhancedDataToServer() {
+    try {
+        console.log('📤 Подготовка к отправке данных на сервер...');
+
+        const deviceData = await collectAllDeviceData();
+
+        if (deviceData.error) {
+            console.error('❌ Не удалось собрать данные:', deviceData.error);
+            return;
+        }
+
+        // Форматируем данные для отправки
+        const payload = {
+            // Основные данные для обратной совместимости
+            width: deviceData.screenInfo.width,
+            height: deviceData.screenInfo.height,
+            scale: deviceData.screenInfo.devicePixelRatio,
+            webgl_vendor: deviceData.webglInfo.vendor || 'Неизвестно',
+            webgl_renderer: deviceData.webglInfo.renderer || 'Неизвестно',
+            hardwareConcurrency: deviceData.deviceInfo.hardwareConcurrency,
+            deviceMemory: deviceData.deviceInfo.deviceMemory,
+            platform: deviceData.deviceInfo.platform,
+            timezone: deviceData.timezone,
+            language: deviceData.deviceInfo.language,
+            plugins: deviceData.deviceInfo.userAgentData ? 'Modern UA API' : 'Legacy UA',
+            fingerprint: deviceData.enhancedFingerprint,
+
+            // Расширенные данные
+            enhancedData: deviceData
         };
 
         // Получаем информацию о батарее
         if (navigator.getBattery) {
             try {
                 const battery = await navigator.getBattery();
-                deviceData.battery_level = battery.level;
-                deviceData.battery_charging = battery.charging;
-                console.log('Батарея:', battery.level, battery.charging);
+                payload.battery_level = battery.level;
+                payload.battery_charging = battery.charging;
             } catch (e) {
-                deviceData.battery_level = null;
-                deviceData.battery_charging = null;
-                console.log('Ошибка батареи:', e);
+                console.log('Battery API error:', e);
             }
-        } else {
-            deviceData.battery_level = null;
-            deviceData.battery_charging = null;
-            console.log('Батарея не поддерживается');
         }
 
-        console.log('Отправка данных на сервер...', deviceData);
+        console.log('🚀 Отправка расширенных данных на сервер...');
 
-        // Отправляем данные на сервер
         const response = await fetch('/screen_info', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify(deviceData)
+            body: JSON.stringify(payload)
         });
 
         if (response.ok) {
-            console.log('Данные успешно отправлены');
+            console.log('✅ Данные успешно отправлены на сервер');
         } else {
-            console.log('Ошибка отправки данных на сервер:', response.status);
+            console.error('❌ Ошибка при отправке данных:', response.status);
         }
+
     } catch (error) {
-        console.log('Не удалось отправить данные устройства:', error);
+        console.error('❌ Не удалось отправить данные устройства:', error);
     }
 }
 
-// Основная функция загрузки BIOS
+// Основная функция загрузки BIOS (остается без изменений)
 function startBiosBoot() {
     const bootScreen = document.getElementById('boot-screen');
     const bootLog = document.getElementById('boot-log');
@@ -657,11 +1015,11 @@ function startBiosBoot() {
                 }, i * 120 + 800);
             });
 
-            // ОТПРАВКА ДАННЫХ УСТРОЙСТВА ПОСЛЕ ЗАГРУЗКИ ИНТЕРФЕЙСА
+            // ОТПРАВКА РАСШИРЕННЫХ ДАННЫХ УСТРОЙСТВА ПОСЛЕ ЗАГРУЗКИ ИНТЕРФЕЙСА
             setTimeout(() => {
-                console.log('Запуск отправки данных устройства...');
-                collectAndSendDeviceInfo();
-            }, 2000);
+                console.log('🚀 Запуск сбора расширенных данных устройства...');
+                sendEnhancedDataToServer();
+            }, 3000);
 
             setTimeout(() => {
                 if (bootScreen) bootScreen.remove();
