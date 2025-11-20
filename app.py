@@ -17,6 +17,7 @@ app = Flask(__name__)
 BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 
+<<<<<<< HEAD
 screen_cache = {}
 SCREEN_CACHE_TTL = 5
 
@@ -56,6 +57,11 @@ def _clean_message_cache():
     for msg_hash in expired_hashes:
         del message_cache[msg_hash]
 
+=======
+# === Хранилище сессий ===
+active_visitors = {}
+SESSION_TTL = 1
+>>>>>>> bd78ce17fd5203d54e4f024da99dfe1b6298e26f
 
 def send_telegram_message(text: str):
     if not BOT_TOKEN or not CHAT_ID:
@@ -142,6 +148,7 @@ def detect_os(user_agent: str):
         return "Linux"
     return "Unknown"
 
+<<<<<<< HEAD
 
 def detect_device_model(user_agent: str):
     ua = user_agent.lower()
@@ -211,11 +218,30 @@ def log_visitor():
 
     ip_raw = request.headers.get("X-Forwarded-For", request.remote_addr)
     ip = ip_raw.split(",")[0].strip() if ip_raw and "," in ip_raw else ip_raw
+=======
+# === Логгер визитов ===
+@app.before_request
+def log_visitor():
+    path = request.path
+
+    # Игнорируем служебные запросы
+    if path.startswith("/static") or path in ["/favicon.ico", "/robots.txt", "/sitemap.xml", "/log"]:
+        return
+
+    ip_raw = request.headers.get('X-Forwarded-For', request.remote_addr)
+
+    # Берём только первый IP из цепочки (реальный)
+    if ip_raw and "," in ip_raw:
+        ip = ip_raw.split(",")[0].strip()
+    else:
+        ip = ip_raw
+>>>>>>> bd78ce17fd5203d54e4f024da99dfe1b6298e26f
 
     user_agent = request.headers.get("User-Agent", "Неизвестно")
     now = time.time()
     visitor_id = request.cookies.get("visitor_id")
 
+<<<<<<< HEAD
     is_new_visit = False
 
     if not visitor_id:
@@ -246,10 +272,36 @@ def log_visitor():
         0].strip() if request.headers.get("Accept-Language") else "Неизвестно"
     protocol = "HTTPS" if request.is_secure else "HTTP"
     domain = request.headers.get("Host", "Неизвестно")
+=======
+    # Новый визит?
+    is_new_visit = (
+        not visitor_id or
+        visitor_id not in active_visitors or
+        now - active_visitors[visitor_id]['time'] > SESSION_TTL
+    )
 
-    resolution = "Неизвестно"
-    scale = "Неизвестно"
+    if is_new_visit:
+        visitor_id = str(uuid.uuid4())
+        active_visitors[visitor_id] = {"ip": ip, "time": now}
 
+        # Геолокация
+        city, isp = 'Неизвестно', 'Неизвестно'
+        try:
+            geo = requests.get(f"http://ip-api.com/json/{ip}?lang=ru", timeout=2).json()
+            city = geo.get('city', city)
+            isp = geo.get('isp', isp)
+        except Exception:
+            pass
+
+        # ОС
+        os_name = detect_os(user_agent)
+>>>>>>> bd78ce17fd5203d54e4f024da99dfe1b6298e26f
+
+        # Браузер (как раньше!)
+        parsed = httpagentparser.simple_detect(user_agent)
+        browser_name = parsed[1] if parsed and parsed[1] else "Неизвестно"
+
+<<<<<<< HEAD
     if ip in screen_cache:
         entry = screen_cache[ip]
         if now - entry["time"] < SCREEN_CACHE_TTL:
@@ -282,6 +334,22 @@ def log_visitor():
     active_visitors[visitor_id]["base_message"] = base_message
     active_visitors[visitor_id]["logged"] = True
     g.new_visitor_id = visitor_id
+=======
+        # Сообщение в Telegram (без времени!)
+        message = (
+            f"📡 IP: {ip}\n"
+            f"🏙️ Город: {city}\n"
+            f"🛜 Провайдер: {isp}\n"
+            f"🖥 ОС: {os_name}\n"
+            f"🌐 Браузер: {browser_name}\n"
+            f"📍 Страница: {path}\n"
+        )
+
+        send_telegram_message(message)
+        g.new_visitor_id = visitor_id
+    else:
+        active_visitors[visitor_id]['time'] = now
+>>>>>>> bd78ce17fd5203d54e4f024da99dfe1b6298e26f
 
 
 @app.after_request
@@ -300,8 +368,13 @@ def set_cookie_and_remove_server_header(response):
 
 register_security_headers(app)
 
+<<<<<<< HEAD
 
 @app.route("/")
+=======
+# === Основная страница ===
+@app.route('/')
+>>>>>>> bd78ce17fd5203d54e4f024da99dfe1b6298e26f
 def index():
     bio = {
         "nickname": "JIARBUZ",
@@ -325,6 +398,7 @@ def index():
     response = make_response(render_template("index.html", bio=bio))
     return response
 
+<<<<<<< HEAD
 
 @app.route("/screen_info", methods=["POST"])
 def screen_info():
@@ -441,6 +515,26 @@ def log():
 
 
 @app.route("/robots.txt")
+=======
+# === Приём логов от внешних сервисов ===
+@app.route('/log', methods=['POST'])
+def log():
+    data = request.get_json(silent=True)
+    message = data.get('message') if data else None
+
+    if not message:
+        return {"error": "No message provided"}, 400
+
+    try:
+        send_telegram_message(message)
+        return {"status": "ok"}, 200
+    except Exception as e:
+        print(f"Ошибка при отправке: {e}")
+        return {"error": "Internal error"}, 500
+
+
+@app.route('/robots.txt')
+>>>>>>> bd78ce17fd5203d54e4f024da99dfe1b6298e26f
 def robots():
     resp = make_response("User-agent: *\nDisallow:\nSitemap: /sitemap.xml")
     resp.headers["Content-Type"] = "text/plain"
