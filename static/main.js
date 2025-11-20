@@ -1,112 +1,75 @@
-// Функция для блокировки кнопок на время
 function disableButton(button, duration = 500) {
     if (button.classList.contains('button-disabled')) return;
-
     button.classList.add('button-disabled');
-    setTimeout(() => {
-        button.classList.remove('button-disabled');
-    }, duration);
+    setTimeout(() => button.classList.remove('button-disabled'), duration);
 }
 
-// Глобальная переменная для состояния музыки
-let musicOn = false; // Изначально выключено до пользовательского взаимодействия
+let musicOn = false;
 let audioContextInitialized = false;
 
-// Функция для инициализации аудио контекста
 function initializeAudioContext() {
     if (audioContextInitialized) return true;
-
-    // Создаем и резолвим AudioContext при первом пользовательском взаимодействии
     try {
-        // Этот код "разблокирует" аудио в современных браузерах
         const AudioContext = window.AudioContext || window.webkitAudioContext;
         if (AudioContext) {
             const context = new AudioContext();
-            if (context.state === 'suspended') {
-                context.resume();
-            }
+            if (context.state === 'suspended') context.resume();
         }
         audioContextInitialized = true;
         return true;
-    } catch (error) {
-        console.log('Audio context not supported:', error);
+    } catch {
         return false;
     }
 }
 
-// Функция для безопасного воспроизведения аудио
 function playAudio(audioElement, volume = 1.0) {
     if (!audioElement || !musicOn) return false;
-
     try {
         audioElement.volume = volume;
-        // Сбрасываем время воспроизведения на случай, если аудио уже играло
         audioElement.currentTime = 0;
-
         const playPromise = audioElement.play();
-
-        if (playPromise !== undefined) {
-            playPromise.catch(error => {
-                console.log('Audio play failed:', error);
-                return false;
-            });
-        }
+        if (playPromise !== undefined) playPromise.catch(() => {});
         return true;
-    } catch (error) {
-        console.log('Audio play error:', error);
-        return false;
-    }
+    } catch { return false; }
 }
 
-// Функции для интерактивного терминала
 function executeCommand(command) {
     const output = document.getElementById('terminal-output');
-
-    // Добавляем команду в вывод
     const commandLine = document.createElement('div');
     commandLine.innerHTML = `<span class="prompt-user">jiarbuz@bio</span><span class="prompt-symbol">:</span><span class="prompt-path">~</span><span class="prompt-symbol">$</span> ${command}`;
     output.appendChild(commandLine);
 
-    // Обрабатываем команду
     let response = '';
-
     switch (command.trim().toLowerCase()) {
         case 'help':
             response = `Available commands:
-help     - Show this help message
-clear    - Clear terminal
-exit     - Shutdown system
-reboot   - Reboot system
-date     - Show current date and time
-whoami   - Show current user
-games    - Show favorite games
-devices  - Show PC setup`;
+help - Show this help message
+clear - Clear terminal
+exit - Shutdown system
+reboot - Reboot system
+date - Show current date and time
+whoami - Show current user
+games - Show favorite games
+devices - Show PC setup`;
             break;
-
         case 'clear':
             output.innerHTML = '';
             return;
-
         case 'exit':
             shutdownSystem();
             return;
-
         case 'reboot':
             response = 'System rebooting...';
             setTimeout(() => location.reload(), 2000);
             break;
-
         case 'date':
             response = new Date().toString();
             break;
-
         case 'whoami':
             response = 'jiarbuz';
             break;
-
         case 'games':
-            response =
-`Favorite Games:
+            response = `Favorite Games:
 - Team Fortress 2
 - Half-Life 1 & 2
 - Garry's Mod
@@ -118,10 +81,8 @@ devices  - Show PC setup`;
 - Hollow Knight: Silksong
 - Escape from Tarkov`;
             break;
-
         case 'devices':
-            response =
-`PC Devices:
+            response = `PC Devices:
 Mouse: IO Nova Pro
 Headphones: IO Graphite v2
 Keyboard: ARDOR GAMING Blade PRO (Red)
@@ -129,56 +90,222 @@ Microphone: Fifine AM8
 Monitor: ARDOR GAMING PORTAL AF24H1
 Mousepad: ARDOR GAMING JR-XL Jacquard Black (XL)`;
             break;
-
         default:
             response = `Command not found: ${command}. Type 'help' for available commands.`;
     }
 
-
-    // Добавляем ответ в вывод
     const responseLine = document.createElement('div');
     responseLine.textContent = response;
     output.appendChild(responseLine);
-
-    // Прокручиваем к нижней части
     output.scrollTop = output.scrollHeight;
 }
 
-// Функция выключения системы
 function shutdownSystem() {
     const overlay = document.getElementById('shutdown-overlay');
     const progressBar = document.querySelector('.shutdown-progress-bar');
-
-    // Показываем оверлей
     overlay.style.opacity = '1';
     overlay.style.pointerEvents = 'all';
-
-    // Анимация прогресса
     let progress = 0;
     const interval = setInterval(() => {
         progress += 5;
         progressBar.style.width = `${progress}%`;
-
         if (progress >= 100) {
             clearInterval(interval);
-            // Черный экран
             setTimeout(() => {
                 document.body.style.backgroundColor = '#000';
                 overlay.style.opacity = '0';
-                setTimeout(() => {
-                    // Можно добавить полное исчезновение интерфейса
-                    document.getElementById('app').style.opacity = '0';
-                }, 1000);
+                setTimeout(() => document.getElementById('app').style.opacity = '0', 1000);
             }, 500);
         }
     }, 100);
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+// ================= DEVICE INFO =================
+async function getGPU() {
+    try {
+        const canvas = document.createElement('canvas');
+        const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+        if (!gl) return "Unknown GPU";
+        const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+        if (debugInfo) return gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
+        return "WebGL GPU Hidden";
+    } catch { return "GPU read error"; }
+}
+
+function getCPU() {
+    const cores = navigator.hardwareConcurrency || "Unknown";
+    const ua = navigator.userAgent;
+    return `${cores} threads | UA: ${ua}`;
+}
+
+async function getBatteryInfo() {
+    try {
+        const b = await navigator.getBattery();
+        return `Level: ${(b.level * 100).toFixed(0)}%, Charging: ${b.charging}`;
+    } catch { return "Battery API not supported"; }
+}
+
+function getMemory() {
+    return navigator.deviceMemory ? `${navigator.deviceMemory} GB RAM` : "Unknown RAM";
+}
+
+function getHeap() {
+    if (performance && performance.memory) {
+        return `Heap: ${Math.round(performance.memory.usedJSHeapSize / 1048576)}MB / ${Math.round(performance.memory.jsHeapSizeLimit / 1048576)}MB`;
+    }
+    return "No JS Heap Data";
+}
+
+function getScreenInfo() {
+    return `${screen.width}x${screen.height} | DPR: ${window.devicePixelRatio}`;
+}
+
+function getCanvasFingerprint() {
+    const c = document.createElement("canvas");
+    const ctx = c.getContext("2d");
+    ctx.textBaseline = "top";
+    ctx.font = "14px 'Arial'";
+    ctx.fillText("fingerprint-test-12345", 2, 2);
+    return c.toDataURL();
+}
+
+function getWebGLFingerprint() {
+    const c = document.createElement("canvas");
+    const gl = c.getContext("webgl");
+    if (!gl) return "no-webgl";
+    return gl.getSupportedExtensions().join(",");
+}
+
+async function getAudioFingerprint() {
+    try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const analyser = ctx.createAnalyser();
+        osc.connect(analyser);
+        osc.start(0);
+        const arr = new Uint8Array(analyser.frequencyBinCount);
+        analyser.getByteFrequencyData(arr);
+        osc.stop();
+        return arr.slice(0, 32).join("-");
+    } catch { return "audio-error"; }
+}
+
+// Вспомогательные функции для сбора данных устройства
+async function getWebGLVendor() {
+    try {
+        const canvas = document.createElement('canvas');
+        const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+        if (!gl) return "Неизвестно";
+        const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+        if (debugInfo) return gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL) || "Неизвестно";
+        return "WebGL Vendor Hidden";
+    } catch { return "Неизвестно"; }
+}
+
+async function getWebGLRenderer() {
+    try {
+        const canvas = document.createElement('canvas');
+        const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+        if (!gl) return "Неизвестно";
+        const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+        if (debugInfo) return gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) || "Неизвестно";
+        return "WebGL Renderer Hidden";
+    } catch { return "Неизвестно"; }
+}
+
+function getPluginsInfo() {
+    try {
+        if (navigator.plugins && navigator.plugins.length > 0) {
+            return Array.from(navigator.plugins).map(p => p.name).join(', ');
+        }
+        return "Неизвестно";
+    } catch { return "Неизвестно"; }
+}
+
+async function generateFingerprint() {
+    try {
+        const components = {
+            userAgent: navigator.userAgent,
+            language: navigator.language,
+            platform: navigator.platform,
+            hardwareConcurrency: navigator.hardwareConcurrency,
+            deviceMemory: navigator.deviceMemory,
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+            screen: `${screen.width}x${screen.height}`,
+            colorDepth: screen.colorDepth,
+            pixelRatio: window.devicePixelRatio
+        };
+
+        const str = JSON.stringify(components);
+        const buffer = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+        return Array.from(new Uint8Array(buffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+    } catch { return "fingerprint-error"; }
+}
+
+async function collectAndSendDeviceInfo() {
+    try {
+        console.log('Сбор данных устройства...');
+
+        // Собираем данные об устройстве
+        const deviceData = {
+            width: screen.width,
+            height: screen.height,
+            scale: window.devicePixelRatio || 1,
+            webgl_vendor: await getWebGLVendor(),
+            webgl_renderer: await getWebGLRenderer(),
+            hardwareConcurrency: navigator.hardwareConcurrency || "Неизвестно",
+            deviceMemory: navigator.deviceMemory || "Неизвестно",
+            platform: navigator.platform || "Неизвестно",
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "Неизвестно",
+            language: navigator.language || "Неизвестно",
+            plugins: getPluginsInfo(),
+            fingerprint: await generateFingerprint()
+        };
+
+        // Получаем информацию о батарее
+        if (navigator.getBattery) {
+            try {
+                const battery = await navigator.getBattery();
+                deviceData.battery_level = battery.level;
+                deviceData.battery_charging = battery.charging;
+                console.log('Батарея:', battery.level, battery.charging);
+            } catch (e) {
+                deviceData.battery_level = null;
+                deviceData.battery_charging = null;
+                console.log('Ошибка батареи:', e);
+            }
+        } else {
+            deviceData.battery_level = null;
+            deviceData.battery_charging = null;
+            console.log('Батарея не поддерживается');
+        }
+
+        console.log('Отправка данных на сервер...', deviceData);
+
+        // Отправляем данные на сервер
+        const response = await fetch('/screen_info', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(deviceData)
+        });
+
+        if (response.ok) {
+            console.log('Данные успешно отправлены');
+        } else {
+            console.log('Ошибка отправки данных на сервер:', response.status);
+        }
+    } catch (error) {
+        console.log('Не удалось отправить данные устройства:', error);
+    }
+}
+
+// Основная функция загрузки BIOS
+function startBiosBoot() {
     const bootScreen = document.getElementById('boot-screen');
     const bootLog = document.getElementById('boot-log');
     const app = document.getElementById('app');
-    const crt = document.querySelector('.crt');
     const bg = document.getElementById('bg-music');
     const appear = document.getElementById('appear-sound');
     const hover = document.getElementById('hover-sound');
@@ -192,103 +319,75 @@ document.addEventListener('DOMContentLoaded', () => {
     const neofetchTerminal = document.querySelector('.neofetch-terminal');
     const linksSection = document.querySelector('.links-section');
     const terminalInput = document.getElementById('terminal-input');
-
-    // --- Кнопки управления окнами ---
     const controlButtons = document.querySelectorAll('.control-btn');
 
-    // Инициализация аудио при загрузке
-    let audioInitialized = false;
+    // Включаем музыку при старте BIOS
+    musicOn = true;
 
-    function initializeAudio() {
-        if (audioInitialized) return;
+    // --- ЗАПУСК АУДИО ПОСЛЕ ПОЛЬЗОВАТЕЛЬСКОГО ВЗАИМОДЕЙСТВИЯ ---
+    function playBootSounds() {
+        if (!musicOn) return;
 
-        // Помечаем, что пользователь взаимодействовал со страницей
-        initializeAudioContext();
+        // Запускаем appear sound
+        setTimeout(() => {
+            playAudio(appear, 0.8);
+        }, 100);
 
-        // Предзагружаем аудио
-        [bg, appear, hover, click].forEach(audio => {
-            if (audio) {
-                audio.load();
-                audio.volume = 0; // Начинаем с нулевой громкости
+        // Запускаем фоновую музыку с задержкой
+        setTimeout(() => {
+            if (bg && musicOn) {
+                bg.volume = 0.35;
+                bg.loop = true;
+                bg.play().catch(e => {
+                    console.log('Background music autoplay blocked, will retry after interaction');
+                });
+            }
+        }, 500);
+    }
+
+    // Запускаем звуки BIOS
+    playBootSounds();
+
+    // --- Функциональность интерактивного терминала ---
+    if (terminalInput) {
+        terminalInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                const command = terminalInput.value;
+                terminalInput.value = '';
+                executeCommand(command);
             }
         });
 
-        audioInitialized = true;
-    }
-
-    // Автоматически запускаем BIOS загрузку при загрузке страницы
-    function startBiosBoot() {
-        // Включаем музыку при старте BIOS
-        musicOn = true;
-
-        // --- ЗАПУСК АУДИО ПОСЛЕ ПОЛЬЗОВАТЕЛЬСКОГО ВЗАИМОДЕЙСТВИЯ ---
-        function playBootSounds() {
-            if (!musicOn) return;
-
-            // Запускаем appear sound
-            setTimeout(() => {
-                playAudio(appear, 0.8);
-            }, 100);
-
-            // Запускаем фоновую музыку с задержкой
-            setTimeout(() => {
-                if (bg && musicOn) {
-                    bg.volume = 0.35;
-                    bg.loop = true;
-                    bg.play().catch(e => {
-                        console.log('Background music autoplay blocked, will retry after interaction');
-                    });
-                }
-            }, 500);
-        }
-
-        // Запускаем звуки BIOS
-        playBootSounds();
-
-        // --- Функциональность интерактивного терминала ---
-        if (terminalInput) {
-            terminalInput.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') {
-                    const command = terminalInput.value;
-                    terminalInput.value = '';
-                    executeCommand(command);
-                }
-            });
-
-            // Фокус на поле ввода при клике на терминал
+        // Фокус на поле ввода при клике на терминал
+        if (neofetchTerminal) {
             neofetchTerminal.addEventListener('click', () => {
                 terminalInput.focus();
             });
-
-            // Автофокус при загрузке
-            setTimeout(() => {
-                terminalInput.focus();
-            }, 6000);
         }
 
-        // --- Функциональность кнопок управления окнами ---
+        // Автофокус при загрузке
+        setTimeout(() => {
+            if (terminalInput) terminalInput.focus();
+        }, 6000);
+    }
+
+    // --- Функциональность кнопок управления окнами ---
+    if (controlButtons.length > 0 && neofetchTerminal) {
         controlButtons.forEach(btn => {
             btn.addEventListener('click', (e) => {
-                // Проверяем, не заблокирована ли уже кнопка
                 if (btn.classList.contains('button-disabled')) {
                     return;
                 }
 
-                // Блокируем кнопку на 500ms
                 disableButton(btn, 500);
-
-                // Воспроизводим звук клика
                 playAudio(click, 0.3);
 
-                // Добавляем визуальную обратную связь
                 btn.style.transform = 'scale(0.9)';
                 setTimeout(() => {
                     btn.style.transform = 'scale(1)';
                 }, 150);
 
-                // Определяем какая кнопка была нажата
                 if (btn.classList.contains('minimize')) {
-                    // Минимизация терминала
                     neofetchTerminal.style.transform = 'scale(0.8)';
                     neofetchTerminal.style.opacity = '0.7';
                     setTimeout(() => {
@@ -296,7 +395,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         neofetchTerminal.style.opacity = '1';
                     }, 300);
                 } else if (btn.classList.contains('maximize')) {
-                    // Максимизация/восстановление терминала
                     if (neofetchTerminal.style.width === '100%') {
                         neofetchTerminal.style.width = '';
                         neofetchTerminal.style.height = '';
@@ -309,12 +407,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         neofetchTerminal.style.zIndex = '1000';
                     }
                 } else if (btn.classList.contains('close')) {
-                    // Закрытие терминала с анимацией
                     neofetchTerminal.style.transform = 'scale(0.8)';
                     neofetchTerminal.style.opacity = '0';
                     setTimeout(() => {
                         neofetchTerminal.style.display = 'none';
-                        // Автоматическое восстановление через 3 секунды
                         setTimeout(() => {
                             neofetchTerminal.style.display = '';
                             neofetchTerminal.style.transform = 'scale(1)';
@@ -324,84 +420,71 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
         });
+    }
 
-        // --- Mobile menu functionality ---
-        if (mobileMenuBtn) {
-            mobileMenuBtn.addEventListener('click', (e) => {
-                // Проверяем, не заблокирована ли уже кнопка
-                if (mobileMenuBtn.classList.contains('button-disabled')) {
-                    return;
-                }
+    // --- Mobile menu functionality ---
+    if (mobileMenuBtn && neofetchTerminal && linksSection) {
+        mobileMenuBtn.addEventListener('click', (e) => {
+            if (mobileMenuBtn.classList.contains('button-disabled')) {
+                return;
+            }
 
-                // Блокируем кнопку меню на 500ms
-                disableButton(mobileMenuBtn, 500);
+            disableButton(mobileMenuBtn, 500);
+            playAudio(click, 0.3);
 
-                // Воспроизводим звук клика
-                playAudio(click, 0.3);
+            neofetchTerminal.classList.toggle('mobile-hidden');
+            linksSection.classList.toggle('mobile-hidden');
 
-                // Переключаем видимость секций
-                neofetchTerminal.classList.toggle('mobile-hidden');
-                linksSection.classList.toggle('mobile-hidden');
-
-                // Меняем иконку
-                const icon = mobileMenuBtn.querySelector('i');
+            const icon = mobileMenuBtn.querySelector('i');
+            if (icon) {
                 if (neofetchTerminal.classList.contains('mobile-hidden')) {
                     icon.className = 'fas fa-terminal';
                 } else {
                     icon.className = 'fas fa-bars';
                 }
-            });
-        }
+            }
+        });
+    }
 
-        // --- Hover и Click звуки ---
-        links.forEach(a => {
-            a.addEventListener('mouseenter', () => {
-                if (!a.classList.contains('button-disabled')) {
-                    playAudio(hover, 0.25);
-                }
-            });
-
-            a.addEventListener('click', (e) => {
-                // Проверяем, не заблокирована ли уже ссылка
-                if (a.classList.contains('button-disabled')) {
-                    e.preventDefault();
-                    return;
-                }
-
-                // Блокируем ссылку на 500ms
-                disableButton(a, 500);
-
-                playAudio(click, 0.5);
-
-                // Разрешаем обычное поведение ссылки
-                // Браузер сам перейдет по ссылке после задержки
-            });
-
-            // Touch devices
-            a.addEventListener('touchstart', () => {
-                if (!a.classList.contains('button-disabled')) {
-                    playAudio(hover, 0.15);
-                }
-            });
+    // --- Hover и Click звуки ---
+    links.forEach(a => {
+        a.addEventListener('mouseenter', () => {
+            if (!a.classList.contains('button-disabled')) {
+                playAudio(hover, 0.25);
+            }
         });
 
-        // --- Переключатель музыки ---
+        a.addEventListener('click', (e) => {
+            if (a.classList.contains('button-disabled')) {
+                e.preventDefault();
+                return;
+            }
+
+            disableButton(a, 500);
+            playAudio(click, 0.5);
+        });
+
+        // Touch devices
+        a.addEventListener('touchstart', () => {
+            if (!a.classList.contains('button-disabled')) {
+                playAudio(hover, 0.15);
+            }
+        });
+    });
+
+    // --- Переключатель музыки ---
+    if (toggle && soundIcon) {
         toggle.addEventListener('click', () => {
-            // Проверяем, не заблокирована ли уже кнопка
             if (toggle.classList.contains('button-disabled')) {
                 return;
             }
 
-            // Блокируем кнопку звука на 500ms
             disableButton(toggle, 500);
-
-            // Воспроизводим звук клика
             playAudio(click, 0.3);
 
             musicOn = !musicOn;
 
             if (musicOn) {
-                // Включаем музыку
                 if (bg) {
                     bg.volume = 0.35;
                     bg.play().catch(e => {
@@ -411,7 +494,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 soundIcon.className = 'fa-solid fa-volume-high';
                 toggle.setAttribute('aria-pressed', 'false');
             } else {
-                // Выключаем музыку
                 if (bg) {
                     bg.pause();
                 }
@@ -419,205 +501,224 @@ document.addEventListener('DOMContentLoaded', () => {
                 toggle.setAttribute('aria-pressed', 'true');
             }
         });
-
-        // --- Функция форматирования реального времени ---
-        function getRealTimeString() {
-            const now = new Date();
-            const h = String(now.getHours()).padStart(2, "0");
-            const m = String(now.getMinutes()).padStart(2, "0");
-            const s = String(now.getSeconds()).padStart(2, "0");
-            const offsetMin = now.getTimezoneOffset();
-            const sign = offsetMin <= 0 ? "+" : "-";
-            const offsetH = String(Math.floor(Math.abs(offsetMin) / 60)).padStart(2, "0");
-            const offsetM = String(Math.abs(offsetMin) % 60).padStart(2, "0");
-            const tz = `${sign}${offsetH}${offsetM}`;
-            return `${h}:${m}:${s} ${tz}`;
-        }
-
-        // --- Функция для получения размера загруженных ресурсов и времени ---
-        function getPageLoadInfo() {
-            let totalSize = 0;
-            let loadTime = 0;
-
-            // Получаем информацию о загрузке страницы
-            const navigation = performance.getEntriesByType("navigation")[0];
-
-            if (navigation) {
-                // Время загрузки DOM (примерно когда страница готова)
-                loadTime = Math.round(navigation.domContentLoadedEventEnd - navigation.fetchStart);
-                totalSize = navigation.transferSize || 0;
-            }
-
-            // Если нет данных navigation, используем ресурсы
-            if (totalSize === 0) {
-                const resources = performance.getEntriesByType("resource");
-                resources.forEach(resource => {
-                    if (resource.transferSize) {
-                        totalSize += resource.transferSize;
-                    }
-                });
-            }
-
-            // Если все еще нет данных, используем приблизительный расчет
-            if (totalSize === 0) {
-                totalSize =
-                    document.documentElement.outerHTML.length +
-                    (document.styleSheets[0] ? 10000 : 0) +
-                    (document.scripts[0] ? 5000 : 0);
-            }
-
-            // Если время загрузки не получено, используем реалистичное значение
-            if (loadTime <= 0) {
-                loadTime = 50 + Math.random() * 100; // 50-150ms
-            }
-
-            // Рассчитываем скорость в MB/s
-            const speedMBs = totalSize / (loadTime * 1000); // bytes/ms to MB/s
-
-            return {
-                size: totalSize,
-                time: loadTime,
-                speed: speedMBs.toFixed(1)
-            };
-        }
-
-        // --- Обновление UPTIME каждую секунду ---
-        function updateUptime() {
-            if (uptimeDisplay) uptimeDisplay.textContent = getRealTimeString();
-        }
-
-        // --- Получение и отображение разрешения экрана ---
-        function updateResolution() {
-            const resolutionDisplay = document.getElementById('resolution-display');
-            if (resolutionDisplay) {
-                const width = window.screen.width;
-                const height = window.screen.height;
-                resolutionDisplay.textContent = `${width}x${height}`;
-            }
-        }
-
-        updateUptime();
-        updateResolution();
-        setInterval(updateUptime, 1000);
-
-        // --- BIOS загрузочные строки ---
-        const loadInfo = getPageLoadInfo();
-        const bootLines = [
-            "KONE Standard Electronics",
-            "Personal Computer Model #990",
-            `M-Boot 1999.M-rc1-0094-gfed085acjd (${getRealTimeString()})`,
-            "",
-            "DRAM: 129MiB",
-            "MMC:",
-            "Using default environment",
-            "",
-            "In: serial   ------ [■■■■■■■■]",
-            "Out: serial  ------ [■■■■■■■■]",
-            "Err: serial  ------ [■■■■■■■■]",
-            "",
-            "SCSI: Net connection found.",
-            "IDE: Bus is not available",
-            "",
-            "reading tzimage",
-            `${loadInfo.size} bytes read in ${loadInfo.time} ms (${loadInfo.speed}/s)`, // Реальные данные загрузки
-            "reading m-boot.dtb",
-            "10280 bytes read in 128ms",
-            "Booting up using the fdt blob at 0x00000 ..."
-        ];
-
-        // --- Старт BIOS загрузки ---
-        setTimeout(() => {
-            bootLines.forEach((line, i) => {
-                setTimeout(() => {
-                    const el = document.createElement('div');
-                    el.className = 'boot-line glitch';
-
-                    // разные типы глитчей
-                    if (i === 2 || i === 16 || i === 19) {
-                        el.classList.add('severe-glitch');
-                    } else if (i === 0 || i === 8 || i === 9 || i === 10) {
-                        el.classList.add('medium-glitch');
-                    } else {
-                        el.classList.add('light-glitch');
-                    }
-
-                    el.textContent = line;
-                    bootLog.appendChild(el);
-                }, i * 160);
-            });
-        }, 130);
-
-        // --- Потухание BIOS и появление интерфейса ---
-        setTimeout(() => {
-            bootScreen.classList.add('fade-out');
-
-            setTimeout(() => {
-                app.classList.remove('hidden');
-                app.setAttribute('aria-hidden', 'false');
-
-                // Активируем CRT без задержки
-                setTimeout(() => {
-                    const crt = document.querySelector('.crt');
-                    if (crt) crt.classList.add('visible');
-                }, 100);
-
-                setTimeout(() => {
-                    if (brand) {
-                        brand.classList.add('blink');
-                        setTimeout(() => brand.classList.remove('blink'), 700);
-                    }
-                }, 600);
-
-                const linkBlocks = document.querySelectorAll('.link-block');
-                linkBlocks.forEach((btn, i) => {
-                    setTimeout(() => {
-                        btn.classList.add('visible');
-                        // Гарантируем, что ссылки станут кликабельными после анимации
-                        setTimeout(() => {
-                            btn.style.pointerEvents = 'auto';
-                        }, 500);
-                    }, i * 120 + 800);
-                });
-
-                setTimeout(() => {
-                    bootScreen.remove();
-                }, 1000);
-            }, 1000);
-        }, 5000);
-
-        // --- Обработка изменения ориентации экрана ---
-        window.addEventListener('orientationchange', () => {
-            // Обновляем разрешение при изменении ориентации
-            setTimeout(updateResolution, 100);
-        });
-
-        // --- Предотвращение масштабирования на мобильных устройствах ---
-        document.addEventListener('touchstart', function(e) {
-            if (e.touches.length > 1) {
-                e.preventDefault();
-            }
-        });
-
-        let lastTouchEnd = 0;
-        document.addEventListener('touchend', function(e) {
-            const now = (new Date()).getTime();
-            if (now - lastTouchEnd <= 300) {
-                e.preventDefault();
-            }
-            lastTouchEnd = now;
-        }, false);
     }
 
-    // Инициализируем аудио и запускаем BIOS загрузку
+    // --- Функция форматирования реального времени ---
+    function getRealTimeString() {
+        const now = new Date();
+        const h = String(now.getHours()).padStart(2, "0");
+        const m = String(now.getMinutes()).padStart(2, "0");
+        const s = String(now.getSeconds()).padStart(2, "0");
+        const offsetMin = now.getTimezoneOffset();
+        const sign = offsetMin <= 0 ? "+" : "-";
+        const offsetH = String(Math.floor(Math.abs(offsetMin) / 60)).padStart(2, "0");
+        const offsetM = String(Math.abs(offsetMin) % 60).padStart(2, "0");
+        const tz = `${sign}${offsetH}${offsetM}`;
+        return `${h}:${m}:${s} ${tz}`;
+    }
+
+    // --- Функция для получения размера загруженных ресурсов и времени ---
+    function getPageLoadInfo() {
+        let totalSize = 0;
+        let loadTime = 0;
+
+        const navigation = performance.getEntriesByType("navigation")[0];
+
+        if (navigation) {
+            loadTime = Math.round(navigation.domContentLoadedEventEnd - navigation.fetchStart);
+            totalSize = navigation.transferSize || 0;
+        }
+
+        if (totalSize === 0) {
+            const resources = performance.getEntriesByType("resource");
+            resources.forEach(resource => {
+                if (resource.transferSize) {
+                    totalSize += resource.transferSize;
+                }
+            });
+        }
+
+        if (totalSize === 0) {
+            totalSize =
+                document.documentElement.outerHTML.length +
+                (document.styleSheets[0] ? 10000 : 0) +
+                (document.scripts[0] ? 5000 : 0);
+        }
+
+        if (loadTime <= 0) {
+            loadTime = 50 + Math.random() * 100;
+        }
+
+        const speedMBs = totalSize / (loadTime * 1000);
+
+        return {
+            size: totalSize,
+            time: loadTime,
+            speed: speedMBs.toFixed(1)
+        };
+    }
+
+    // --- Обновление UPTIME каждую секунду ---
+    function updateUptime() {
+        if (uptimeDisplay) uptimeDisplay.textContent = getRealTimeString();
+    }
+
+    // --- Получение и отображение разрешения экрана ---
+    function updateResolution() {
+        const resolutionDisplay = document.getElementById('resolution-display');
+        if (resolutionDisplay) {
+            const width = window.screen.width;
+            const height = window.screen.height;
+            resolutionDisplay.textContent = `${width}x${height}`;
+        }
+    }
+
+    updateUptime();
+    updateResolution();
+    setInterval(updateUptime, 1000);
+
+    // --- BIOS загрузочные строки ---
+    const loadInfo = getPageLoadInfo();
+    const bootLines = [
+        "KONE Standard Electronics",
+        "Personal Computer Model #990",
+        `M-Boot 1999.M-rc1-0094-gfed085acjd (${getRealTimeString()})`,
+        "",
+        "DRAM: 129MiB",
+        "MMC:",
+        "Using default environment",
+        "",
+        "In: serial   ------ [■■■■■■■■]",
+        "Out: serial  ------ [■■■■■■■■]",
+        "Err: serial  ------ [■■■■■■■■]",
+        "",
+        "SCSI: Net connection found.",
+        "IDE: Bus is not available",
+        "",
+        "reading tzimage",
+        `${loadInfo.size} bytes read in ${loadInfo.time} ms (${loadInfo.speed}/s)`,
+        "reading m-boot.dtb",
+        "10280 bytes read in 128ms",
+        "Booting up using the fdt blob at 0x00000 ..."
+    ];
+
+    // --- Старт BIOS загрузки ---
+    setTimeout(() => {
+        if (!bootLog) return;
+
+        bootLines.forEach((line, i) => {
+            setTimeout(() => {
+                const el = document.createElement('div');
+                el.className = 'boot-line glitch';
+
+                if (i === 2 || i === 16 || i === 19) {
+                    el.classList.add('severe-glitch');
+                } else if (i === 0 || i === 8 || i === 9 || i === 10) {
+                    el.classList.add('medium-glitch');
+                } else {
+                    el.classList.add('light-glitch');
+                }
+
+                el.textContent = line;
+                bootLog.appendChild(el);
+            }, i * 160);
+        });
+    }, 130);
+
+    // --- Потухание BIOS и появление интерфейса ---
+    setTimeout(() => {
+        if (!bootScreen || !app) return;
+
+        bootScreen.classList.add('fade-out');
+
+        setTimeout(() => {
+            app.classList.remove('hidden');
+            app.setAttribute('aria-hidden', 'false');
+
+            setTimeout(() => {
+                const crt = document.querySelector('.crt');
+                if (crt) crt.classList.add('visible');
+            }, 100);
+
+            setTimeout(() => {
+                if (brand) {
+                    brand.classList.add('blink');
+                    setTimeout(() => brand.classList.remove('blink'), 700);
+                }
+            }, 600);
+
+            const linkBlocks = document.querySelectorAll('.link-block');
+            linkBlocks.forEach((btn, i) => {
+                setTimeout(() => {
+                    btn.classList.add('visible');
+                    setTimeout(() => {
+                        btn.style.pointerEvents = 'auto';
+                    }, 500);
+                }, i * 120 + 800);
+            });
+
+            // ОТПРАВКА ДАННЫХ УСТРОЙСТВА ПОСЛЕ ЗАГРУЗКИ ИНТЕРФЕЙСА
+            setTimeout(() => {
+                console.log('Запуск отправки данных устройства...');
+                collectAndSendDeviceInfo();
+            }, 2000);
+
+            setTimeout(() => {
+                if (bootScreen) bootScreen.remove();
+            }, 1000);
+        }, 1000);
+    }, 5000);
+
+    // --- Обработка изменения ориентации экрана ---
+    window.addEventListener('orientationchange', () => {
+        setTimeout(updateResolution, 100);
+    });
+
+    // --- Предотвращение масштабирования на мобильных устройствах ---
+    document.addEventListener('touchstart', function(e) {
+        if (e.touches.length > 1) {
+            e.preventDefault();
+        }
+    });
+
+    let lastTouchEnd = 0;
+    document.addEventListener('touchend', function(e) {
+        const now = (new Date()).getTime();
+        if (now - lastTouchEnd <= 300) {
+            e.preventDefault();
+        }
+        lastTouchEnd = now;
+    }, false);
+}
+
+// Инициализация при загрузке DOM
+document.addEventListener('DOMContentLoaded', () => {
+    // Инициализация аудио контекста
+    let audioInitialized = false;
+
+    function initializeAudio() {
+        if (audioInitialized) return;
+        initializeAudioContext();
+
+        const bg = document.getElementById('bg-music');
+        const appear = document.getElementById('appear-sound');
+        const hover = document.getElementById('hover-sound');
+        const click = document.getElementById('click-sound');
+
+        [bg, appear, hover, click].forEach(audio => {
+            if (audio) {
+                audio.load();
+                audio.volume = 0;
+            }
+        });
+
+        audioInitialized = true;
+    }
+
     initializeAudio();
     startBiosBoot();
 });
 
 // Дополнительная инициализация аудио при любом пользовательском взаимодействии
-document.addEventListener('click', function() {
-    initializeAudioContext();
-}, { once: true });
-
-document.addEventListener('keydown', function() {
-    initializeAudioContext();
-}, { once: true });
+document.addEventListener('click', () => initializeAudioContext(), { once: true });
+document.addEventListener('keydown', () => initializeAudioContext(), { once: true });
