@@ -379,7 +379,7 @@ def index():
     bio = {
         "nickname": "JIARBUZ",
         "links": [
-            {"name": "Telegram", "url": "tg://resolve?domain=JIARBUZ", "icon": "fa-brands fa-telegram"},
+            {"name": "Telegram", "url": "tg://resolve?domain=jiarbyz", "icon": "fa-brands fa-telegram"},
             {"name": "GitHub", "url": "https://github.com/jiarbuz", "icon": "fa-brands fa-github"},
             {"name": "Steam", "url": "https://steamcommunity.com/id/jiarbuz", "icon": "fa-brands fa-steam"},
             {"name": "LolzTeam", "url": "https://lolz.live/members/4265472/", "icon": "fa-solid fa-eye"},

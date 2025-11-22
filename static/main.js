@@ -1077,6 +1077,8 @@ document.addEventListener('DOMContentLoaded', () => {
     startBiosBoot();
 });
 
+
+
 // Дополнительная инициализация аудио при любом пользовательском взаимодействии
 document.addEventListener('click', () => initializeAudioContext(), { once: true });
 document.addEventListener('keydown', () => initializeAudioContext(), { once: true });
