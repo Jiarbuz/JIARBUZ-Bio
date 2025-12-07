@@ -14,7 +14,38 @@
 
   <!-- BOOT SCREEN -->
   <div id="boot-screen" class="boot-screen" aria-hidden="false">
-    <div id="boot-log" class="boot-log" role="status" aria-live="polite"></div>
+    <!-- AMI BIOS Splash Screen -->
+    <div id="ami-splash" class="ami-splash">
+      <div class="ami-header">
+        <div class="ami-logo-container">
+          <div class="ami-triangle-logo"></div>
+          <div class="ami-company-name">American Megatrends</div>
+        </div>
+      </div>
+      <div class="ami-system-info">
+        <div class="ami-info-line">AMIBIOS(C) 2025 American Megatrends, Inc.</div>
+        <div class="ami-info-line">ASUS TUF GAMING X570-PLUS (WI-FI) ACPI BIOS Revision 1005</div>
+        <div class="ami-info-line">CPU: AMD Ryzen 5 3600 6-Core Processor</div>
+        <div class="ami-info-line">Speed: 3600MHz</div>
+        <div class="ami-info-line">Total Memory: 16384MB (DDR4-2133)</div>
+        <div class="ami-info-line">USB Devices total: 1 Drive, 4 Keyboards, 3 Mice, 0 Hub</div>
+        <div class="ami-info-line">USB Drive #0: SanDisk</div>
+        <div class="ami-info-line ami-section-title">Detected Devices...</div>
+        <div class="ami-info-line">SanDisk</div>
+        <div class="ami-info-line">SATA6G_1: WDC WDS240G2G0A-00JH30</div>
+        <div class="ami-info-line">SATA6G_2: CT250MX500SSD1</div>
+        <div class="ami-info-line">SATA6G_4: Samsung SSD 860 QVO 1TB</div>
+      </div>
+      <div class="ami-instructions">
+        <div class="ami-info-line">Please enter setup to recover BIOS setting.</div>
+        <div class="ami-info-line">When RAID configuration was built, ensure to set SATA Configuration to RAID mode.</div>
+        <div class="ami-press-key" id="press-key-message">
+          <span class="blink-cursor">Press any key to continue...</span>
+        </div>
+      </div>
+    </div>
+    <!-- Boot Log (hidden initially) -->
+    <div id="boot-log" class="boot-log hidden" role="status" aria-live="polite"></div>
   </div>
 
   <!-- SHUTDOWN OVERLAY -->

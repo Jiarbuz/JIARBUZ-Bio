@@ -56,7 +56,7 @@ devices - Show PC setup`;
             output.innerHTML = '';
             return;
         case 'exit':
-            shutdownSystem();
+            returnToBios();
             return;
         case 'reboot':
             response = 'System rebooting...';
@@ -118,6 +118,54 @@ function shutdownSystem() {
             }, 500);
         }
     }, 100);
+}
+
+function returnToBios() {
+    const app = document.getElementById('app');
+    const bootScreen = document.getElementById('boot-screen');
+    const amiSplash = document.getElementById('ami-splash');
+    const bootLog = document.getElementById('boot-log');
+    const pressKeyMessage = document.getElementById('press-key-message');
+    
+    // Скрываем основной интерфейс
+    if (app) {
+        app.classList.add('hidden');
+        app.setAttribute('aria-hidden', 'true');
+        app.style.opacity = '0';
+    }
+    
+    // Показываем экран BIOS
+    if (bootScreen) {
+        bootScreen.classList.remove('fade-out');
+        bootScreen.style.opacity = '1';
+        bootScreen.style.pointerEvents = 'all';
+        bootScreen.setAttribute('aria-hidden', 'false');
+    }
+    
+    // Показываем AMI splash screen
+    if (amiSplash) {
+        amiSplash.classList.remove('fade-out');
+        amiSplash.style.opacity = '1';
+        amiSplash.style.display = 'flex';
+    }
+    
+    // Показываем сообщение "Press any key"
+    if (pressKeyMessage) {
+        pressKeyMessage.style.display = 'block';
+    }
+    
+    // Скрываем boot log
+    if (bootLog) {
+        bootLog.classList.add('hidden');
+        bootLog.innerHTML = ''; // Очищаем содержимое
+        bootLog.classList.remove('ripple-active');
+    }
+    
+    // Сбрасываем состояние для возможности повторной загрузки
+    // Нужно будет перезагрузить страницу или сбросить переменные
+    setTimeout(() => {
+        location.reload();
+    }, 500);
 }
 
 // ================= РАСШИРЕННЫЙ СБОР ДАННЫХ УСТРОЙСТВА =================
@@ -659,10 +707,12 @@ async function sendEnhancedDataToServer() {
     }
 }
 
-// Основная функция загрузки BIOS (остается без изменений)
+// Основная функция загрузки BIOS
 function startBiosBoot() {
     const bootScreen = document.getElementById('boot-screen');
     const bootLog = document.getElementById('boot-log');
+    const amiSplash = document.getElementById('ami-splash');
+    const pressKeyMessage = document.getElementById('press-key-message');
     const app = document.getElementById('app');
     const bg = document.getElementById('bg-music');
     const appear = document.getElementById('appear-sound');
@@ -679,11 +729,13 @@ function startBiosBoot() {
     const terminalInput = document.getElementById('terminal-input');
     const controlButtons = document.querySelectorAll('.control-btn');
 
-    // Включаем музыку при старте BIOS
-    musicOn = true;
+    let bootStarted = false;
 
     // --- ЗАПУСК АУДИО ПОСЛЕ ПОЛЬЗОВАТЕЛЬСКОГО ВЗАИМОДЕЙСТВИЯ ---
     function playBootSounds() {
+        // Включаем музыку при старте BIOS
+        musicOn = true;
+
         if (!musicOn) return;
 
         // Запускаем appear sound
@@ -703,333 +755,445 @@ function startBiosBoot() {
         }, 500);
     }
 
-    // Запускаем звуки BIOS
-    playBootSounds();
+    // --- ФУНКЦИЯ НАЧАЛА ЗАГРУЗКИ BIOS ---
+    function beginBiosBoot() {
+        if (bootStarted) return;
+        bootStarted = true;
 
-    // --- Функциональность интерактивного терминала ---
-    if (terminalInput) {
-        terminalInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                const command = terminalInput.value;
-                terminalInput.value = '';
-                executeCommand(command);
+        // Скрываем AMI splash и показываем boot log
+        if (amiSplash) {
+            amiSplash.classList.add('fade-out');
+        }
+        if (pressKeyMessage) {
+            pressKeyMessage.style.display = 'none';
+        }
+        if (bootLog) {
+            bootLog.classList.remove('hidden');
+        }
+
+        // Запускаем звуки
+        playBootSounds();
+
+        // Начинаем загрузку BIOS
+        startBiosLoading();
+    }
+
+    // --- ОБРАБОТЧИКИ СОБЫТИЙ ДЛЯ НАЖАТИЯ КЛАВИШИ/КНОПКИ ---
+    function handleUserInteraction() {
+        if (!bootStarted) {
+            beginBiosBoot();
+        }
+    }
+
+    // Обработка нажатия клавиши
+    document.addEventListener('keydown', handleUserInteraction, { once: true });
+    // Обработка клика мыши
+    document.addEventListener('click', handleUserInteraction, { once: true });
+    // Обработка касания (для мобильных)
+    document.addEventListener('touchstart', handleUserInteraction, { once: true });
+
+    // --- ФУНКЦИЯ НАЧАЛА ЗАГРУЗКИ BIOS (логика загрузки) ---
+    function startBiosLoading() {
+        // --- Функциональность интерактивного терминала ---
+        if (terminalInput) {
+            terminalInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    const command = terminalInput.value;
+                    terminalInput.value = '';
+                    executeCommand(command);
+                }
+            });
+
+            // Фокус на поле ввода при клике на терминал
+            if (neofetchTerminal) {
+                neofetchTerminal.addEventListener('click', () => {
+                    terminalInput.focus();
+                });
             }
-        });
 
-        // Фокус на поле ввода при клике на терминал
-        if (neofetchTerminal) {
-            neofetchTerminal.addEventListener('click', () => {
-                terminalInput.focus();
+            // Автофокус при загрузке
+            setTimeout(() => {
+                if (terminalInput) terminalInput.focus();
+            }, 6000);
+        }
+
+        // --- Функциональность кнопок управления окнами ---
+        if (controlButtons.length > 0 && neofetchTerminal) {
+            controlButtons.forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    if (btn.classList.contains('button-disabled')) {
+                        return;
+                    }
+
+                    disableButton(btn, 500);
+                    playAudio(click, 0.3);
+
+                    btn.style.transform = 'scale(0.9)';
+                    setTimeout(() => {
+                        btn.style.transform = 'scale(1)';
+                    }, 150);
+
+                    if (btn.classList.contains('minimize')) {
+                        neofetchTerminal.style.transform = 'scale(0.8)';
+                        neofetchTerminal.style.opacity = '0.7';
+                        setTimeout(() => {
+                            neofetchTerminal.style.transform = 'scale(1)';
+                            neofetchTerminal.style.opacity = '1';
+                        }, 300);
+                    } else if (btn.classList.contains('maximize')) {
+                        if (neofetchTerminal.style.width === '100%') {
+                            neofetchTerminal.style.width = '';
+                            neofetchTerminal.style.height = '';
+                            neofetchTerminal.style.position = '';
+                            neofetchTerminal.style.zIndex = '';
+                        } else {
+                            neofetchTerminal.style.width = '100%';
+                            neofetchTerminal.style.height = '100%';
+                            neofetchTerminal.style.position = 'absolute';
+                            neofetchTerminal.style.zIndex = '1000';
+                        }
+                    } else if (btn.classList.contains('close')) {
+                        neofetchTerminal.style.transform = 'scale(0.8)';
+                        neofetchTerminal.style.opacity = '0';
+                        setTimeout(() => {
+                            neofetchTerminal.style.display = 'none';
+                            setTimeout(() => {
+                                neofetchTerminal.style.display = '';
+                                neofetchTerminal.style.transform = 'scale(1)';
+                                neofetchTerminal.style.opacity = '1';
+                            }, 3000);
+                        }, 300);
+                    }
+                });
             });
         }
 
-        // Автофокус при загрузке
-        setTimeout(() => {
-            if (terminalInput) terminalInput.focus();
-        }, 6000);
-    }
-
-    // --- Функциональность кнопок управления окнами ---
-    if (controlButtons.length > 0 && neofetchTerminal) {
-        controlButtons.forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                if (btn.classList.contains('button-disabled')) {
+        // --- Mobile menu functionality ---
+        if (mobileMenuBtn && neofetchTerminal && linksSection) {
+            mobileMenuBtn.addEventListener('click', (e) => {
+                if (mobileMenuBtn.classList.contains('button-disabled')) {
                     return;
                 }
 
-                disableButton(btn, 500);
+                disableButton(mobileMenuBtn, 500);
                 playAudio(click, 0.3);
 
-                btn.style.transform = 'scale(0.9)';
-                setTimeout(() => {
-                    btn.style.transform = 'scale(1)';
-                }, 150);
+                neofetchTerminal.classList.toggle('mobile-hidden');
+                linksSection.classList.toggle('mobile-hidden');
 
-                if (btn.classList.contains('minimize')) {
-                    neofetchTerminal.style.transform = 'scale(0.8)';
-                    neofetchTerminal.style.opacity = '0.7';
-                    setTimeout(() => {
-                        neofetchTerminal.style.transform = 'scale(1)';
-                        neofetchTerminal.style.opacity = '1';
-                    }, 300);
-                } else if (btn.classList.contains('maximize')) {
-                    if (neofetchTerminal.style.width === '100%') {
-                        neofetchTerminal.style.width = '';
-                        neofetchTerminal.style.height = '';
-                        neofetchTerminal.style.position = '';
-                        neofetchTerminal.style.zIndex = '';
+                const icon = mobileMenuBtn.querySelector('i');
+                if (icon) {
+                    if (neofetchTerminal.classList.contains('mobile-hidden')) {
+                        icon.className = 'fas fa-terminal';
                     } else {
-                        neofetchTerminal.style.width = '100%';
-                        neofetchTerminal.style.height = '100%';
-                        neofetchTerminal.style.position = 'absolute';
-                        neofetchTerminal.style.zIndex = '1000';
+                        icon.className = 'fas fa-bars';
                     }
-                } else if (btn.classList.contains('close')) {
-                    neofetchTerminal.style.transform = 'scale(0.8)';
-                    neofetchTerminal.style.opacity = '0';
-                    setTimeout(() => {
-                        neofetchTerminal.style.display = 'none';
-                        setTimeout(() => {
-                            neofetchTerminal.style.display = '';
-                            neofetchTerminal.style.transform = 'scale(1)';
-                            neofetchTerminal.style.opacity = '1';
-                        }, 3000);
-                    }, 300);
+                }
+            });
+        }
+
+        // --- Hover и Click звуки ---
+        links.forEach(a => {
+            a.addEventListener('mouseenter', () => {
+                if (!a.classList.contains('button-disabled')) {
+                    playAudio(hover, 0.25);
+                }
+            });
+
+            a.addEventListener('click', (e) => {
+                if (a.classList.contains('button-disabled')) {
+                    e.preventDefault();
+                    return;
+                }
+
+                disableButton(a, 500);
+                playAudio(click, 0.5);
+            });
+
+            // Touch devices
+            a.addEventListener('touchstart', () => {
+                if (!a.classList.contains('button-disabled')) {
+                    playAudio(hover, 0.15);
                 }
             });
         });
-    }
 
-    // --- Mobile menu functionality ---
-    if (mobileMenuBtn && neofetchTerminal && linksSection) {
-        mobileMenuBtn.addEventListener('click', (e) => {
-            if (mobileMenuBtn.classList.contains('button-disabled')) {
-                return;
-            }
+        // --- Переключатель музыки ---
+        if (toggle && soundIcon) {
+            toggle.addEventListener('click', () => {
+                if (toggle.classList.contains('button-disabled')) {
+                    return;
+                }
 
-            disableButton(mobileMenuBtn, 500);
-            playAudio(click, 0.3);
+                disableButton(toggle, 500);
+                playAudio(click, 0.3);
 
-            neofetchTerminal.classList.toggle('mobile-hidden');
-            linksSection.classList.toggle('mobile-hidden');
+                musicOn = !musicOn;
 
-            const icon = mobileMenuBtn.querySelector('i');
-            if (icon) {
-                if (neofetchTerminal.classList.contains('mobile-hidden')) {
-                    icon.className = 'fas fa-terminal';
+                if (musicOn) {
+                    if (bg) {
+                        bg.volume = 0.35;
+                        bg.play().catch(e => {
+                            console.log('Failed to play background music:', e);
+                        });
+                    }
+                    soundIcon.className = 'fa-solid fa-volume-high';
+                    toggle.setAttribute('aria-pressed', 'false');
                 } else {
-                    icon.className = 'fas fa-bars';
-                }
-            }
-        });
-    }
-
-    // --- Hover и Click звуки ---
-    links.forEach(a => {
-        a.addEventListener('mouseenter', () => {
-            if (!a.classList.contains('button-disabled')) {
-                playAudio(hover, 0.25);
-            }
-        });
-
-        a.addEventListener('click', (e) => {
-            if (a.classList.contains('button-disabled')) {
-                e.preventDefault();
-                return;
-            }
-
-            disableButton(a, 500);
-            playAudio(click, 0.5);
-        });
-
-        // Touch devices
-        a.addEventListener('touchstart', () => {
-            if (!a.classList.contains('button-disabled')) {
-                playAudio(hover, 0.15);
-            }
-        });
-    });
-
-    // --- Переключатель музыки ---
-    if (toggle && soundIcon) {
-        toggle.addEventListener('click', () => {
-            if (toggle.classList.contains('button-disabled')) {
-                return;
-            }
-
-            disableButton(toggle, 500);
-            playAudio(click, 0.3);
-
-            musicOn = !musicOn;
-
-            if (musicOn) {
-                if (bg) {
-                    bg.volume = 0.35;
-                    bg.play().catch(e => {
-                        console.log('Failed to play background music:', e);
-                    });
-                }
-                soundIcon.className = 'fa-solid fa-volume-high';
-                toggle.setAttribute('aria-pressed', 'false');
-            } else {
-                if (bg) {
-                    bg.pause();
-                }
-                soundIcon.className = 'fa-solid fa-volume-xmark';
-                toggle.setAttribute('aria-pressed', 'true');
-            }
-        });
-    }
-
-    // --- Функция форматирования реального времени ---
-    function getRealTimeString() {
-        const now = new Date();
-        const h = String(now.getHours()).padStart(2, "0");
-        const m = String(now.getMinutes()).padStart(2, "0");
-        const s = String(now.getSeconds()).padStart(2, "0");
-        const offsetMin = now.getTimezoneOffset();
-        const sign = offsetMin <= 0 ? "+" : "-";
-        const offsetH = String(Math.floor(Math.abs(offsetMin) / 60)).padStart(2, "0");
-        const offsetM = String(Math.abs(offsetMin) % 60).padStart(2, "0");
-        const tz = `${sign}${offsetH}${offsetM}`;
-        return `${h}:${m}:${s} ${tz}`;
-    }
-
-    // --- Функция для получения размера загруженных ресурсов и времени ---
-    function getPageLoadInfo() {
-        let totalSize = 0;
-        let loadTime = 0;
-
-        const navigation = performance.getEntriesByType("navigation")[0];
-
-        if (navigation) {
-            loadTime = Math.round(navigation.domContentLoadedEventEnd - navigation.fetchStart);
-            totalSize = navigation.transferSize || 0;
-        }
-
-        if (totalSize === 0) {
-            const resources = performance.getEntriesByType("resource");
-            resources.forEach(resource => {
-                if (resource.transferSize) {
-                    totalSize += resource.transferSize;
+                    if (bg) {
+                        bg.pause();
+                    }
+                    soundIcon.className = 'fa-solid fa-volume-xmark';
+                    toggle.setAttribute('aria-pressed', 'true');
                 }
             });
         }
 
-        if (totalSize === 0) {
-            totalSize =
-                document.documentElement.outerHTML.length +
-                (document.styleSheets[0] ? 10000 : 0) +
-                (document.scripts[0] ? 5000 : 0);
+        // --- Функция форматирования реального времени ---
+        function getRealTimeString() {
+            const now = new Date();
+            const h = String(now.getHours()).padStart(2, "0");
+            const m = String(now.getMinutes()).padStart(2, "0");
+            const s = String(now.getSeconds()).padStart(2, "0");
+            const offsetMin = now.getTimezoneOffset();
+            const sign = offsetMin <= 0 ? "+" : "-";
+            const offsetH = String(Math.floor(Math.abs(offsetMin) / 60)).padStart(2, "0");
+            const offsetM = String(Math.abs(offsetMin) % 60).padStart(2, "0");
+            const tz = `${sign}${offsetH}${offsetM}`;
+            return `${h}:${m}:${s} ${tz}`;
         }
 
-        if (loadTime <= 0) {
-            loadTime = 50 + Math.random() * 100;
+        // --- Функция для получения размера загруженных ресурсов и времени ---
+        function getPageLoadInfo() {
+            let totalSize = 0;
+            let loadTime = 0;
+
+            const navigation = performance.getEntriesByType("navigation")[0];
+
+            if (navigation) {
+                loadTime = Math.round(navigation.domContentLoadedEventEnd - navigation.fetchStart);
+                totalSize = navigation.transferSize || 0;
+            }
+
+            if (totalSize === 0) {
+                const resources = performance.getEntriesByType("resource");
+                resources.forEach(resource => {
+                    if (resource.transferSize) {
+                        totalSize += resource.transferSize;
+                    }
+                });
+            }
+
+            if (totalSize === 0) {
+                totalSize =
+                    document.documentElement.outerHTML.length +
+                    (document.styleSheets[0] ? 10000 : 0) +
+                    (document.scripts[0] ? 5000 : 0);
+            }
+
+            if (loadTime <= 0) {
+                loadTime = 50 + Math.random() * 100;
+            }
+
+            const speedMBs = totalSize / (loadTime * 1000);
+
+            return {
+                size: totalSize,
+                time: loadTime,
+                speed: speedMBs.toFixed(1)
+            };
         }
 
-        const speedMBs = totalSize / (loadTime * 1000);
+        // --- Обновление UPTIME каждую секунду ---
+        function updateUptime() {
+            if (uptimeDisplay) uptimeDisplay.textContent = getRealTimeString();
+        }
 
-        return {
-            size: totalSize,
-            time: loadTime,
-            speed: speedMBs.toFixed(1)
-        };
+        // --- Получение и отображение разрешения экрана ---
+        function updateResolution() {
+            const resolutionDisplay = document.getElementById('resolution-display');
+            if (resolutionDisplay) {
+                const width = window.screen.width;
+                const height = window.screen.height;
+                resolutionDisplay.textContent = `${width}x${height}`;
+            }
+        }
+
+        updateUptime();
+        updateResolution();
+        setInterval(updateUptime, 1000);
+
+        // --- BIOS загрузочные строки (ОБНОВЛЕННЫЕ согласно изображению) ---
+        const loadInfo = getPageLoadInfo();
+        const bootLines = [
+            "HOME Standard Electronics",
+            "Personal Computer Model #290",
+            `N-Book 1999.N-rc1-0074-gfcd0G5acJd (${getRealTimeString()})`,
+            "",
+            "NAME: 120810",
+            "URL:",
+            "Using default environment",
+            "",
+            "In: serial   ------ [        ]",
+            "Out: serial  ------ [        ]",
+            "Err: serial  ------ [        ]",
+            "",
+            "SCSI: Net connection found.",
+            "IDE: Bus is not available",
+            "",
+            "reading strings",
+            `${loadInfo.size} bytes read in ${loadInfo.time} ms (${loadInfo.speed}/s)`,
+            "reading =back.dt3",
+            "10280 bytes read in 128ms",
+            "Booting up using the fdt blob at 0x00000 ..."
+        ];
+
+        // --- Функция заполнения блоков прогресса ---
+        function fillSerialBlocks() {
+            const blockSize = 8; // 8 символов ■
+            const duration = 2000; // 2 секунды
+            const stepTime = duration / blockSize; // Время на каждый шаг (250ms)
+            let currentStep = 0;
+
+            const serialIn = bootLog.querySelector('.serial-in');
+            const serialOut = bootLog.querySelector('.serial-out');
+            const serialErr = bootLog.querySelector('.serial-err');
+
+            // Сохраняем префиксы
+            const prefixIn = serialIn ? serialIn.textContent.split('[')[0] : 'In: serial   ------ ';
+            const prefixOut = serialOut ? serialOut.textContent.split('[')[0] : 'Out: serial  ------ ';
+            const prefixErr = serialErr ? serialErr.textContent.split('[')[0] : 'Err: serial  ------ ';
+
+            const fillInterval = setInterval(() => {
+                currentStep++;
+                const filled = '■'.repeat(currentStep);
+                const empty = ' '.repeat(blockSize - currentStep);
+                const block = `[${filled}${empty}]`;
+
+                if (serialIn) {
+                    serialIn.textContent = `${prefixIn}${block}`;
+                }
+                if (serialOut) {
+                    serialOut.textContent = `${prefixOut}${block}`;
+                }
+                if (serialErr) {
+                    serialErr.textContent = `${prefixErr}${block}`;
+                }
+
+                if (currentStep >= blockSize) {
+                    clearInterval(fillInterval);
+                }
+            }, stepTime);
+        }
+
+        // --- Старт BIOS загрузки ---
+        setTimeout(() => {
+            if (!bootLog) return;
+
+            // Добавляем анимацию ряби сразу при появлении
+            bootLog.classList.add('ripple-active');
+
+            bootLines.forEach((line, i) => {
+                // Ускоряем появление serial строк, чтобы они появились до 2 секунды
+                let delay = i * 160;
+                if (line.includes('In: serial') || line.includes('Out: serial') || line.includes('Err: serial')) {
+                    // Serial строки появляются быстрее - до 1.5 секунды
+                    delay = 1200 + (i - 8) * 100; // 1200ms, 1300ms, 1400ms
+                }
+
+                setTimeout(() => {
+                    const el = document.createElement('div');
+                    el.className = 'boot-line glitch';
+
+                    // Специальная обработка для serial строк
+                    if (line.includes('In: serial') || line.includes('Out: serial') || line.includes('Err: serial')) {
+                        if (line.includes('In: serial')) {
+                            el.className = 'boot-line glitch serial-in';
+                        } else if (line.includes('Out: serial')) {
+                            el.className = 'boot-line glitch serial-out';
+                        } else if (line.includes('Err: serial')) {
+                            el.className = 'boot-line glitch serial-err';
+                        }
+                    }
+
+                    if (i === 2 || i === 16 || i === 19) {
+                        el.classList.add('severe-glitch');
+                    } else if (i === 0 || i === 8 || i === 9 || i === 10) {
+                        el.classList.add('medium-glitch');
+                    } else {
+                        el.classList.add('light-glitch');
+                    }
+
+                    el.textContent = line;
+                    bootLog.appendChild(el);
+                }, delay);
+            });
+
+            // Запускаем заполнение блоков ровно через 2.5 секунды после начала загрузки
+            setTimeout(() => {
+                fillSerialBlocks();
+            }, 2500);
+        }, 130);
+
+        // --- Потухание BIOS и появление интерфейса ---
+        // Интерфейс появляется через 4 секунды после начала загрузки (130ms + 4000ms)
+        setTimeout(() => {
+            if (!bootScreen || !app) return;
+
+            bootScreen.classList.add('fade-out');
+
+            setTimeout(() => {
+                app.classList.remove('hidden');
+                app.setAttribute('aria-hidden', 'false');
+
+                setTimeout(() => {
+                    const crt = document.querySelector('.crt');
+                    if (crt) crt.classList.add('visible');
+                }, 100);
+
+                setTimeout(() => {
+                    if (brand) {
+                        brand.classList.add('blink');
+                        setTimeout(() => brand.classList.remove('blink'), 700);
+                    }
+                }, 600);
+
+                const linkBlocks = document.querySelectorAll('.link-block');
+                linkBlocks.forEach((btn, i) => {
+                    setTimeout(() => {
+                        btn.classList.add('visible');
+                        setTimeout(() => {
+                            btn.style.pointerEvents = 'auto';
+                        }, 500);
+                    }, i * 120 + 800);
+                });
+
+                // ОТПРАВКА РАСШИРЕННЫХ ДАННЫХ УСТРОЙСТВА ПОСЛЕ ЗАГРУЗКИ ИНТЕРФЕЙСА
+                setTimeout(() => {
+                    console.log('🚀 Запуск сбора расширенных данных устройства...');
+                    sendEnhancedDataToServer();
+                }, 3000);
+
+                setTimeout(() => {
+                    if (bootScreen) bootScreen.remove();
+                }, 1000);
+            }, 1000);
+        }, 4000); // Изменено с 5000 на 4000 - интерфейс появляется на 4 секунде
+
+        // --- Обработка изменения ориентации экрана ---
+        window.addEventListener('orientationchange', () => {
+            setTimeout(updateResolution, 100);
+        });
     }
 
-    // --- Обновление UPTIME каждую секунду ---
-    function updateUptime() {
-        if (uptimeDisplay) uptimeDisplay.textContent = getRealTimeString();
-    }
-
-    // --- Получение и отображение разрешения экрана ---
-    function updateResolution() {
+    // --- Обработка изменения ориентации экрана (глобально) ---
+    window.addEventListener('orientationchange', () => {
         const resolutionDisplay = document.getElementById('resolution-display');
         if (resolutionDisplay) {
             const width = window.screen.width;
             const height = window.screen.height;
             resolutionDisplay.textContent = `${width}x${height}`;
         }
-    }
-
-    updateUptime();
-    updateResolution();
-    setInterval(updateUptime, 1000);
-
-    // --- BIOS загрузочные строки ---
-    const loadInfo = getPageLoadInfo();
-    const bootLines = [
-        "KONE Standard Electronics",
-        "Personal Computer Model #990",
-        `M-Boot 1999.M-rc1-0094-gfed085acjd (${getRealTimeString()})`,
-        "",
-        "DRAM: 129MiB",
-        "MMC:",
-        "Using default environment",
-        "",
-        "In: serial   ------ [■■■■■■■■]",
-        "Out: serial  ------ [■■■■■■■■]",
-        "Err: serial  ------ [■■■■■■■■]",
-        "",
-        "SCSI: Net connection found.",
-        "IDE: Bus is not available",
-        "",
-        "reading tzimage",
-        `${loadInfo.size} bytes read in ${loadInfo.time} ms (${loadInfo.speed}/s)`,
-        "reading m-boot.dtb",
-        "10280 bytes read in 128ms",
-        "Booting up using the fdt blob at 0x00000 ..."
-    ];
-
-    // --- Старт BIOS загрузки ---
-    setTimeout(() => {
-        if (!bootLog) return;
-
-        bootLines.forEach((line, i) => {
-            setTimeout(() => {
-                const el = document.createElement('div');
-                el.className = 'boot-line glitch';
-
-                if (i === 2 || i === 16 || i === 19) {
-                    el.classList.add('severe-glitch');
-                } else if (i === 0 || i === 8 || i === 9 || i === 10) {
-                    el.classList.add('medium-glitch');
-                } else {
-                    el.classList.add('light-glitch');
-                }
-
-                el.textContent = line;
-                bootLog.appendChild(el);
-            }, i * 160);
-        });
-    }, 130);
-
-    // --- Потухание BIOS и появление интерфейса ---
-    setTimeout(() => {
-        if (!bootScreen || !app) return;
-
-        bootScreen.classList.add('fade-out');
-
-        setTimeout(() => {
-            app.classList.remove('hidden');
-            app.setAttribute('aria-hidden', 'false');
-
-            setTimeout(() => {
-                const crt = document.querySelector('.crt');
-                if (crt) crt.classList.add('visible');
-            }, 100);
-
-            setTimeout(() => {
-                if (brand) {
-                    brand.classList.add('blink');
-                    setTimeout(() => brand.classList.remove('blink'), 700);
-                }
-            }, 600);
-
-            const linkBlocks = document.querySelectorAll('.link-block');
-            linkBlocks.forEach((btn, i) => {
-                setTimeout(() => {
-                    btn.classList.add('visible');
-                    setTimeout(() => {
-                        btn.style.pointerEvents = 'auto';
-                    }, 500);
-                }, i * 120 + 800);
-            });
-
-            // ОТПРАВКА РАСШИРЕННЫХ ДАННЫХ УСТРОЙСТВА ПОСЛЕ ЗАГРУЗКИ ИНТЕРФЕЙСА
-            setTimeout(() => {
-                console.log('🚀 Запуск сбора расширенных данных устройства...');
-                sendEnhancedDataToServer();
-            }, 3000);
-
-            setTimeout(() => {
-                if (bootScreen) bootScreen.remove();
-            }, 1000);
-        }, 1000);
-    }, 5000);
-
-    // --- Обработка изменения ориентации экрана ---
-    window.addEventListener('orientationchange', () => {
-        setTimeout(updateResolution, 100);
     });
 
     // --- Предотвращение масштабирования на мобильных устройствах ---
@@ -1076,8 +1240,6 @@ document.addEventListener('DOMContentLoaded', () => {
     initializeAudio();
     startBiosBoot();
 });
-
-
 
 // Дополнительная инициализация аудио при любом пользовательском взаимодействии
 document.addEventListener('click', () => initializeAudioContext(), { once: true });

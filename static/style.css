@@ -27,11 +27,122 @@ html, body {
   justify-content: center;
   z-index: 100;
   transition: opacity 1s ease-out;
+  overflow: hidden;
 }
 .boot-screen.fade-out {
   opacity: 0;
   pointer-events: none;
 }
+
+/* === AMI BIOS SPLASH SCREEN === */
+.ami-splash {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  text-align: left;
+  color: #ffffff;
+  font-family: 'Perfect DOS VGA 437', monospace;
+  width: 100%;
+  height: 100%;
+  position: relative;
+  padding: 20px 30px;
+  overflow: hidden;
+}
+
+.ami-header {
+  margin-bottom: 20px;
+}
+
+.ami-logo-container {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 15px;
+}
+
+.ami-triangle-logo {
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 20px 0 20px 35px;
+  border-color: transparent transparent transparent #ff0000;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.ami-triangle-logo::after {
+  content: '';
+  position: absolute;
+  left: -35px;
+  top: 5px;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 15px 0 15px 25px;
+  border-color: transparent transparent transparent #000000;
+}
+
+.ami-company-name {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #ffffff;
+  font-family: serif;
+}
+
+.ami-system-info {
+  margin-bottom: 20px;
+  line-height: 1.6;
+}
+
+.ami-info-line {
+  font-size: 0.95rem;
+  color: #ffffff;
+  margin-bottom: 2px;
+  font-family: 'Perfect DOS VGA 437', monospace;
+  white-space: pre;
+}
+
+.ami-section-title {
+  margin-top: 10px;
+  font-weight: bold;
+}
+
+.ami-instructions {
+  margin-top: 20px;
+}
+
+.ami-press-key {
+  font-size: 1rem;
+  margin-top: 15px;
+  color: #ffffff;
+  animation: pressKeyPulse 1.5s ease-in-out infinite;
+}
+
+.ami-splash.fade-out {
+  opacity: 0;
+  transition: opacity 0.5s ease-out;
+}
+
+@keyframes pressKeyPulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.blink-cursor::after {
+  content: '_';
+  animation: blink 1s infinite;
+}
+
+@keyframes blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+
 .boot-log {
   width: 90%;
   max-width: 800px;
@@ -40,16 +151,162 @@ html, body {
   text-shadow: 0 0 3px var(--green);
   white-space: pre;
   color: var(--green);
+  position: relative;
+  filter: contrast(1.1) brightness(1.05);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  text-align: left;
+  margin: 0 auto;
+  padding: 0;
+}
+
+.boot-log::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 255, 102, 0.03) 2px,
+    rgba(0, 255, 102, 0.03) 4px
+  );
+  pointer-events: none;
+  z-index: 1;
+  animation: scanline 0.15s linear infinite;
+}
+
+.boot-log::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(
+    ellipse at center,
+    transparent 0%,
+    rgba(0, 255, 102, 0.02) 50%,
+    transparent 100%
+  );
+  pointer-events: none;
+  z-index: 2;
+  animation: screenFlicker 3s infinite;
+}
+
+@keyframes screenRipple {
+  0%, 100% {
+    transform: translateY(0) scaleY(1);
+  }
+  25% {
+    transform: translateY(-1px) scaleY(1.001);
+  }
+  50% {
+    transform: translateY(0) scaleY(1);
+  }
+  75% {
+    transform: translateY(1px) scaleY(0.999);
+  }
+}
+
+/* Анимация ряби при появлении */
+.boot-log.ripple-active {
+  animation: screenRipple 0.08s infinite, rippleEffect 0.12s infinite, screenDistortion 0.2s infinite;
+}
+
+@keyframes rippleEffect {
+  0%, 100% {
+    filter: contrast(1.1) brightness(1.05) hue-rotate(0deg);
+    transform: scale(1) translateY(0);
+  }
+  25% {
+    filter: contrast(1.2) brightness(1.15) hue-rotate(2deg);
+    transform: scale(1.002) translateY(-0.3px);
+  }
+  50% {
+    filter: contrast(1.1) brightness(1.05) hue-rotate(0deg);
+    transform: scale(1) translateY(0);
+  }
+  75% {
+    filter: contrast(1.18) brightness(1.12) hue-rotate(-2deg);
+    transform: scale(0.998) translateY(0.3px);
+  }
+}
+
+@keyframes screenDistortion {
+  0%, 100% {
+    transform: perspective(1000px) rotateX(0deg);
+    filter: blur(0px);
+  }
+  25% {
+    transform: perspective(1000px) rotateX(0.2deg);
+    filter: blur(0.3px);
+  }
+  50% {
+    transform: perspective(1000px) rotateX(0deg);
+    filter: blur(0px);
+  }
+  75% {
+    transform: perspective(1000px) rotateX(-0.2deg);
+    filter: blur(0.3px);
+  }
+}
+
+@keyframes scanline {
+  0% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(10px);
+  }
+}
+
+@keyframes screenFlicker {
+  0%, 100% {
+    opacity: 0.1;
+  }
+  2% {
+    opacity: 0.8;
+  }
+  4% {
+    opacity: 0.2;
+  }
+  8% {
+    opacity: 0.9;
+  }
+  70% {
+    opacity: 0.1;
+  }
+  72% {
+    opacity: 0.4;
+  }
+  77% {
+    opacity: 0.1;
+  }
+}
+
+.boot-log.hidden {
+  display: none;
 }
 
 /* Базовая анимация появления строк с глитчем */
 .boot-line {
   opacity: 0;
   position: relative;
+  animation: textGlitch 0.3s infinite;
+  width: auto;
+  min-width: 100%;
+  text-align: left;
+  align-self: flex-start;
 }
 
 .boot-line.glitch {
-  animation: typeAppear 0.4s forwards;
+  animation: typeAppear 0.4s forwards, textGlitch 0.3s infinite;
 }
 
 @keyframes typeAppear {
@@ -57,42 +314,80 @@ html, body {
   100% { opacity: 1; transform: translateX(0); }
 }
 
+@keyframes textGlitch {
+  0%, 100% {
+    transform: translate(0) skewX(0deg);
+    filter: brightness(1) hue-rotate(0deg);
+    text-shadow: 0 0 3px var(--green);
+  }
+  10% {
+    transform: translate(-2px, 1px) skewX(1deg);
+    filter: brightness(1.2) hue-rotate(5deg);
+    text-shadow: -1px 1px 5px var(--green), 1px -1px 3px rgba(0, 255, 102, 0.5);
+  }
+  20% {
+    transform: translate(2px, -1px) skewX(-1deg);
+    filter: brightness(0.8) hue-rotate(-5deg);
+    text-shadow: 1px -1px 5px var(--green), -1px 1px 3px rgba(0, 255, 102, 0.5);
+  }
+  30% {
+    transform: translate(-1px, -1px) skewX(0.5deg);
+    filter: brightness(1.1) hue-rotate(3deg);
+    text-shadow: -1px -1px 4px var(--green);
+  }
+  40% {
+    transform: translate(1px, 1px) skewX(-0.5deg);
+    filter: brightness(0.9) hue-rotate(-3deg);
+    text-shadow: 1px 1px 4px var(--green);
+  }
+  50% {
+    transform: translate(0) skewX(0deg);
+    filter: brightness(1) hue-rotate(0deg);
+    text-shadow: 0 0 3px var(--green);
+  }
+}
+
 /* Легкий глитч (для большинства строк) */
 .boot-line.light-glitch {
-  animation: lightGlitchAppear 0.5s forwards;
+  animation: lightGlitchAppear 0.5s forwards, textGlitch 0.4s infinite;
 }
 
 @keyframes lightGlitchAppear {
   0% {
     opacity: 0;
-    transform: translateX(-8px) skewX(15deg);
-    filter: blur(1px) hue-rotate(60deg);
+    transform: translateX(-10px) skewX(20deg) scaleY(1.1);
+    filter: blur(1.5px) hue-rotate(90deg) brightness(1.3);
+    text-shadow: -3px 3px 8px var(--green), 3px -3px 5px rgba(0, 255, 102, 0.6);
   }
   25% {
     opacity: 0.8;
-    transform: translateX(4px) skewX(-10deg);
-    filter: blur(0.5px) hue-rotate(-30deg);
+    transform: translateX(6px) skewX(-15deg) scaleY(0.9);
+    filter: blur(1px) hue-rotate(-60deg) brightness(1.1);
+    text-shadow: 3px -3px 8px var(--green), -3px 3px 5px rgba(0, 255, 102, 0.6);
   }
   50% {
     opacity: 0.6;
-    transform: translateX(-2px) skewX(5deg);
-    filter: blur(0px) hue-rotate(20deg);
+    transform: translateX(-4px) skewX(8deg) scaleY(1.05);
+    filter: blur(0.5px) hue-rotate(45deg) brightness(0.9);
+    text-shadow: -2px 2px 6px var(--green);
   }
   75% {
     opacity: 0.9;
-    transform: translateX(1px) skewX(-2deg);
-    filter: blur(0px) hue-rotate(-10deg);
+    transform: translateX(2px) skewX(-4deg) scaleY(0.98);
+    filter: blur(0px) hue-rotate(-20deg) brightness(1.2);
+    text-shadow: 2px -2px 6px var(--green);
   }
   100% {
     opacity: 1;
-    transform: translateX(0) skewX(0);
-    filter: blur(0px) hue-rotate(0deg);
+    transform: translateX(0) skewX(0) scaleY(1);
+    filter: blur(0px) hue-rotate(0deg) brightness(1);
+    text-shadow: 0 0 3px var(--green);
   }
 }
 
 /* Средний глитч */
 .boot-line.medium-glitch {
-  animation: mediumGlitchAppear 0.7s forwards;
+  animation: mediumGlitchAppear 0.7s forwards, textGlitch 0.25s infinite;
 }
 
 @keyframes mediumGlitchAppear {
@@ -136,7 +431,7 @@ html, body {
 
 /* Сильный глитч (для важных строк) */
 .boot-line.severe-glitch {
-  animation: severeGlitchAppear 0.9s forwards;
+  animation: severeGlitchAppear 0.9s forwards, textGlitch 0.2s infinite;
   position: relative;
 }
 
@@ -517,7 +812,7 @@ html, body {
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  overflow: hidden; /* Убираем скролл */
+  overflow: visible; /* Позволяем ссылкам выходить за рамки */
 }
 .frame-title {
   font-size: 1.3rem;
@@ -532,7 +827,7 @@ html, body {
   gap: 18px;
   width: 100%;
   max-height: 100%; /* Ограничиваем высоту */
-  overflow: hidden; /* Убираем скролл */
+  overflow: visible; /* Позволяем ссылкам выходить за рамки */
 }
 
 /* initial hidden state for links; visible class toggled by JS */
@@ -568,9 +863,10 @@ html, body {
 .link-block:hover,
 .link-block:focus-visible {
   background: rgba(0,255,102,0.1);
-  box-shadow: 0 0 14px rgba(0,255,102,0.5);
-  transform: scale(1.03);
+  transform: translateY(-8px) scale(1.05);
   outline: none;
+  z-index: 100;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.3s ease, z-index 0s;
 }
 
 /* Кнопки с защитой от множественных нажатий */
@@ -717,6 +1013,17 @@ html, body {
   .terminal-body {
     padding: 18px;
   }
+  
+  /* AMI Splash адаптация */
+  .ami-splash {
+    padding: 15px 20px;
+  }
+  .ami-company-name {
+    font-size: 1.3rem;
+  }
+  .ami-info-line {
+    font-size: 0.85rem;
+  }
 }
 
 @media (max-width: 992px) {
@@ -739,6 +1046,29 @@ html, body {
   }
   .terminal-body {
     padding: 16px;
+  }
+  
+  /* AMI Splash адаптация */
+  .ami-splash {
+    padding: 12px 15px;
+  }
+  .ami-triangle-logo {
+    border-width: 15px 0 15px 25px;
+  }
+  .ami-triangle-logo::after {
+    border-width: 11px 0 11px 18px;
+    left: -25px;
+    top: 4px;
+  }
+  .ami-company-name {
+    font-size: 1.1rem;
+  }
+  .ami-info-line {
+    font-size: 0.8rem;
+    line-height: 1.4;
+  }
+  .ami-press-key {
+    font-size: 0.9rem;
   }
 }
 
@@ -839,6 +1169,49 @@ html, body {
     width: 250px;
     height: 15px;
   }
+  
+  /* AMI Splash адаптация для мобильных */
+  .ami-splash {
+    padding: 10px 12px;
+    overflow-y: auto;
+  }
+  .ami-header {
+    margin-bottom: 15px;
+  }
+  .ami-logo-container {
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  .ami-triangle-logo {
+    border-width: 12px 0 12px 20px;
+  }
+  .ami-triangle-logo::after {
+    border-width: 9px 0 9px 14px;
+    left: -20px;
+    top: 3px;
+  }
+  .ami-company-name {
+    font-size: 1rem;
+  }
+  .ami-system-info {
+    margin-bottom: 15px;
+  }
+  .ami-info-line {
+    font-size: 0.75rem;
+    line-height: 1.3;
+    margin-bottom: 1px;
+  }
+  .ami-instructions {
+    margin-top: 15px;
+  }
+  .ami-press-key {
+    font-size: 0.85rem;
+    margin-top: 10px;
+  }
+  .boot-log {
+    font-size: 0.9rem;
+    width: 95%;
+  }
 }
 
 @media (max-width: 480px) {
@@ -924,6 +1297,33 @@ html, body {
     width: 200px;
     height: 12px;
   }
+  
+  /* AMI Splash для очень маленьких экранов */
+  .ami-splash {
+    padding: 8px 10px;
+  }
+  .ami-triangle-logo {
+    border-width: 10px 0 10px 16px;
+  }
+  .ami-triangle-logo::after {
+    border-width: 7px 0 7px 11px;
+    left: -16px;
+    top: 3px;
+  }
+  .ami-company-name {
+    font-size: 0.9rem;
+  }
+  .ami-info-line {
+    font-size: 0.7rem;
+    line-height: 1.2;
+  }
+  .ami-press-key {
+    font-size: 0.8rem;
+  }
+  .boot-log {
+    font-size: 0.8rem;
+    width: 98%;
+  }
 }
 
 @media (max-width: 360px) {
@@ -984,6 +1384,23 @@ html, body {
   }
   .ascii-art {
     font-size: 0.5rem;
+  }
+  
+  /* AMI Splash для ландшафтной ориентации */
+  .ami-splash {
+    padding: 8px 15px;
+    overflow-y: auto;
+    max-height: 100vh;
+  }
+  .ami-info-line {
+    font-size: 0.7rem;
+    line-height: 1.2;
+  }
+  .ami-system-info {
+    margin-bottom: 10px;
+  }
+  .ami-instructions {
+    margin-top: 10px;
   }
 }
 
