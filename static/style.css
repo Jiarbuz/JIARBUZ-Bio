@@ -1576,10 +1576,10 @@ html, body {
   .boot-log {
     position: absolute;
     top: 10px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 96vw;
-    max-width: none;
+    left: 10px;
+    transform: none;
+    width: calc(100% - 20px);
+    max-width: 900px;
     font-size: 0.8rem;
     text-align: left;
     align-items: flex-start;
@@ -1624,7 +1624,12 @@ html, body {
     padding: 5px 8px;
   }
   .boot-log {
-    width: 99%;
+    position: absolute;
+    top: 6px;
+    left: 6px;
+    transform: none;
+    width: calc(100% - 12px);
+    max-width: none;
     font-size: 0.75rem;
   }
 }
@@ -1653,14 +1658,19 @@ html, body {
     grid-template-columns: 1fr;
   }
   
-  /* BIOS загрузка для портретной ориентации - центрировано */
+  /* BIOS загрузка для портретной ориентации - слева сверху */
   .boot-screen {
-    align-items: center;
-    justify-content: center;
+    align-items: flex-start;
+    justify-content: flex-start;
     padding: 10px;
   }
   .boot-log {
-    width: 95%;
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    transform: none;
+    width: calc(100% - 20px);
+    max-width: 900px;
     font-size: 0.9rem;
     align-items: flex-start;
     justify-content: flex-start;
