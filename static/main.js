@@ -50,6 +50,7 @@ reboot - Reboot system
 date - Show current date and time
 whoami - Show current user
 games - Show favorite games
+ping - Show internet ping
 devices - Show PC setup`;
             break;
         case 'clear':
@@ -68,6 +69,20 @@ devices - Show PC setup`;
         case 'whoami':
             response = 'jiarbuz';
             break;
+        case 'ping':
+            // Показать временное сообщение
+            const pending = document.createElement('div');
+            pending.textContent = 'Pinging...';
+            output.appendChild(pending);
+            output.scrollTop = output.scrollHeight;
+
+            measurePing().then(ms => {
+                pending.textContent = ms >= 0 ? `Ping: ${ms} ms` : 'Ping failed';
+                output.scrollTop = output.scrollHeight;
+            }).catch(() => {
+                pending.textContent = 'Ping failed';
+            });
+            return;
         case 'games':
             response = `Favorite Games:
 - Team Fortress 2
@@ -98,6 +113,19 @@ Mousepad: ARDOR GAMING JR-XL Jacquard Black (XL)`;
     responseLine.textContent = response;
     output.appendChild(responseLine);
     output.scrollTop = output.scrollHeight;
+}
+
+// Измерение пинга (примерно, через fetch к публичному ресурсу)
+async function measurePing() {
+    try {
+        const url = 'https://www.google.com/generate_204';
+        const t0 = performance.now();
+        await fetch(url, { mode: 'no-cors', cache: 'no-store' });
+        const dt = Math.round(performance.now() - t0);
+        return dt;
+    } catch (e) {
+        return -1;
+    }
 }
 
 function shutdownSystem() {
@@ -276,6 +304,183 @@ async function getEnhancedWebGLInfo() {
         };
     } catch (error) {
         return { supported: false, error: error.message };
+    }
+}
+
+// Функция для очистки названия GPU от лишней информации
+function cleanGpuName(rawName) {
+    if (!rawName || rawName === 'Unknown') {
+        return 'Unknown GPU';
+    }
+    
+    let cleaned = rawName;
+    
+    // Убираем ANGLE и всё что в скобках после него (например: "ANGLE (NVIDIA, ...)")
+    // Извлекаем только название GPU из скобок ANGLE
+    const angleMatch = cleaned.match(/ANGLE\s*\([^,]*,\s*([^,)]+)/i);
+    if (angleMatch && angleMatch[1]) {
+        cleaned = angleMatch[1].trim();
+    } else {
+        cleaned = cleaned.replace(/ANGLE\s*\([^)]*\)/gi, '');
+    }
+    
+    // Убираем всё что в скобках в конце (например: "Direct3D11 vs_5_0 ps_5_0, D3D11")
+    cleaned = cleaned.replace(/\s*\([^)]*Direct3D[^)]*\)/gi, '');
+    cleaned = cleaned.replace(/\s*\([^)]*OpenGL[^)]*\)/gi, '');
+    cleaned = cleaned.replace(/\s*\([^)]*D3D[^)]*\)/gi, '');
+    
+    // Убираем суффиксы типа /PCIe/SSE2, /PCIe и т.д.
+    cleaned = cleaned.replace(/\s*\/[^/]*(\/[^/]*)*/g, '');
+    
+    // Убираем упоминания Direct3D, OpenGL, D3D и т.д.
+    cleaned = cleaned.replace(/\s*Direct3D[^\s,]*/gi, '');
+    cleaned = cleaned.replace(/\s*OpenGL[^\s,]*/gi, '');
+    cleaned = cleaned.replace(/\s*D3D[^\s,]*/gi, '');
+    cleaned = cleaned.replace(/\s*vs_[^\s,]*/gi, '');
+    cleaned = cleaned.replace(/\s*ps_[^\s,]*/gi, '');
+    
+    // Убираем запятые и всё что после них (если остались после обработки ANGLE)
+    const commaIndex = cleaned.indexOf(',');
+    if (commaIndex > 0) {
+        cleaned = cleaned.substring(0, commaIndex).trim();
+    }
+    
+    // Убираем лишние пробелы
+    cleaned = cleaned.replace(/\s+/g, ' ').trim();
+    
+    // Обработка NVIDIA
+    if (cleaned.includes('NVIDIA')) {
+        // Убираем "GeForce" если есть, оставляем только NVIDIA
+        cleaned = cleaned.replace(/\s*GeForce\s*/gi, ' ');
+        // Убираем двойные упоминания NVIDIA
+        cleaned = cleaned.replace(/NVIDIA\s+NVIDIA/gi, 'NVIDIA');
+    }
+    
+    // Обработка AMD
+    if (cleaned.includes('AMD') || cleaned.includes('Radeon') || cleaned.includes('RADEON')) {
+        // Приводим Radeon к RADEON
+        cleaned = cleaned.replace(/Radeon/gi, 'RADEON');
+        // Убираем "Series" если есть
+        cleaned = cleaned.replace(/\s*Series\s*/gi, ' ');
+    }
+    
+    // Обработка Intel
+    if (cleaned.includes('Intel')) {
+        // Убираем (R) если есть
+        cleaned = cleaned.replace(/\(R\)/gi, '');
+    }
+    
+    // Убираем лишние пробелы еще раз
+    cleaned = cleaned.replace(/\s+/g, ' ').trim();
+    
+    // Если название слишком длинное, обрезаем
+    if (cleaned.length > 50) {
+        cleaned = cleaned.substring(0, 47) + '...';
+    }
+    
+    return cleaned || 'Unknown GPU';
+}
+
+// Обновление информации о GPU и памяти в BIOS экране
+async function updateBiosHardwareInfo() {
+    try {
+        // Получаем информацию о GPU через WebGL
+        const webglInfo = await getEnhancedWebGLInfo();
+        
+        const gpuNameEl = document.getElementById('gpu-name');
+        const gpuSpeedEl = document.getElementById('gpu-speed');
+        const memoryInfoEl = document.getElementById('memory-info');
+        
+        if (gpuNameEl) {
+            if (webglInfo.supported && webglInfo.renderer && webglInfo.renderer !== 'Unknown') {
+                // Очищаем название GPU от лишней информации
+                const cleanedGpuName = cleanGpuName(webglInfo.renderer);
+                gpuNameEl.textContent = cleanedGpuName;
+            } else {
+                gpuNameEl.textContent = 'Unknown GPU';
+            }
+        }
+        
+        if (gpuSpeedEl) {
+            // Пытаемся определить частоту GPU (это сложно через WebGL, используем приблизительное значение)
+            // Можно использовать MAX_TEXTURE_SIZE как индикатор производительности
+            if (webglInfo.supported && webglInfo.parameters && webglInfo.parameters.MAX_TEXTURE_SIZE) {
+                const maxTexSize = webglInfo.parameters.MAX_TEXTURE_SIZE;
+                // Приблизительная оценка на основе MAX_TEXTURE_SIZE
+                let estimatedSpeed = 'Unknown';
+                if (maxTexSize >= 16384) {
+                    estimatedSpeed = '2000-3000MHz';
+                } else if (maxTexSize >= 8192) {
+                    estimatedSpeed = '1500-2000MHz';
+                } else if (maxTexSize >= 4096) {
+                    estimatedSpeed = '1000-1500MHz';
+                } else {
+                    estimatedSpeed = '500-1000MHz';
+                }
+                gpuSpeedEl.textContent = estimatedSpeed;
+            } else {
+                gpuSpeedEl.textContent = 'Unknown';
+            }
+        }
+        
+        if (memoryInfoEl) {
+            // Получаем информацию об ОЗУ
+            let memorySize = 16384; // Значение по умолчанию в MB
+            let memorySpeed = 'DDR4-2133'; // Значение по умолчанию
+            
+            // Пытаемся получить реальный размер памяти
+            if (navigator.deviceMemory) {
+                memorySize = navigator.deviceMemory * 1024; // Конвертируем GB в MB
+            }
+            
+            // Пытаемся определить скорость памяти на основе нескольких факторов
+            // Используем комбинацию hardwareConcurrency, deviceMemory и WebGL параметров
+            const cores = navigator.hardwareConcurrency || 4;
+            const deviceMem = navigator.deviceMemory || 8;
+            
+            // Более точная оценка скорости памяти
+            // Современные системы обычно имеют более быструю память
+            if (webglInfo.supported && webglInfo.parameters) {
+                const maxTexSize = webglInfo.parameters.MAX_TEXTURE_SIZE || 4096;
+                // Комбинируем несколько факторов для более точной оценки
+                if (cores >= 8 && deviceMem >= 16 && maxTexSize >= 16384) {
+                    memorySpeed = 'DDR4-3600';
+                } else if (cores >= 8 && deviceMem >= 8 && maxTexSize >= 8192) {
+                    memorySpeed = 'DDR4-3200';
+                } else if (cores >= 6 && deviceMem >= 8) {
+                    memorySpeed = 'DDR4-3000';
+                } else if (cores >= 4 && deviceMem >= 8) {
+                    memorySpeed = 'DDR4-2666';
+                } else if (cores >= 4) {
+                    memorySpeed = 'DDR4-2400';
+                } else {
+                    memorySpeed = 'DDR4-2133';
+                }
+            } else {
+                // Fallback оценка только на основе ядер и памяти
+                if (cores >= 8 && deviceMem >= 16) {
+                    memorySpeed = 'DDR4-3200';
+                } else if (cores >= 6 && deviceMem >= 8) {
+                    memorySpeed = 'DDR4-2666';
+                } else if (cores >= 4) {
+                    memorySpeed = 'DDR4-2400';
+                } else {
+                    memorySpeed = 'DDR4-2133';
+                }
+            }
+            
+            memoryInfoEl.textContent = `${memorySize}MB (${memorySpeed})`;
+        }
+    } catch (error) {
+        console.error('Ошибка при обновлении информации о железе в BIOS:', error);
+        // Устанавливаем значения по умолчанию в случае ошибки
+        const gpuNameEl = document.getElementById('gpu-name');
+        const gpuSpeedEl = document.getElementById('gpu-speed');
+        const memoryInfoEl = document.getElementById('memory-info');
+        
+        if (gpuNameEl) gpuNameEl.textContent = 'Unknown GPU';
+        if (gpuSpeedEl) gpuSpeedEl.textContent = 'Unknown';
+        if (memoryInfoEl) memoryInfoEl.textContent = '16384MB (DDR4-2133)';
     }
 }
 
@@ -727,9 +932,14 @@ function startBiosBoot() {
     const neofetchTerminal = document.querySelector('.neofetch-terminal');
     const linksSection = document.querySelector('.links-section');
     const terminalInput = document.getElementById('terminal-input');
-    const controlButtons = document.querySelectorAll('.control-btn');
 
     let bootStarted = false;
+
+    // --- ОБНОВЛЕНИЕ ИНФОРМАЦИИ О ЖЕЛЕЗЕ В BIOS ---
+    // Вызываем с небольшой задержкой, чтобы убедиться, что DOM элементы доступны
+    setTimeout(() => {
+        updateBiosHardwareInfo();
+    }, 100);
 
     // --- ЗАПУСК АУДИО ПОСЛЕ ПОЛЬЗОВАТЕЛЬСКОГО ВЗАИМОДЕЙСТВИЯ ---
     function playBootSounds() {
@@ -760,15 +970,21 @@ function startBiosBoot() {
         if (bootStarted) return;
         bootStarted = true;
 
-        // Скрываем AMI splash и показываем boot log
+        // Скрываем AMI splash
         if (amiSplash) {
             amiSplash.classList.add('fade-out');
         }
         if (pressKeyMessage) {
             pressKeyMessage.style.display = 'none';
         }
+
+        // Показываем лог и включаем усиленный глитч на время загрузки
         if (bootLog) {
             bootLog.classList.remove('hidden');
+            bootLog.classList.add('boot-glitch');
+            setTimeout(() => {
+                bootLog.classList.remove('boot-glitch');
+            }, 2500); // 2.5 секунды
         }
 
         // Запускаем звуки
@@ -817,58 +1033,11 @@ function startBiosBoot() {
             }, 6000);
         }
 
-        // --- Функциональность кнопок управления окнами ---
-        if (controlButtons.length > 0 && neofetchTerminal) {
-            controlButtons.forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    if (btn.classList.contains('button-disabled')) {
-                        return;
-                    }
-
-                    disableButton(btn, 500);
-                    playAudio(click, 0.3);
-
-                    btn.style.transform = 'scale(0.9)';
-                    setTimeout(() => {
-                        btn.style.transform = 'scale(1)';
-                    }, 150);
-
-                    if (btn.classList.contains('minimize')) {
-                        neofetchTerminal.style.transform = 'scale(0.8)';
-                        neofetchTerminal.style.opacity = '0.7';
-                        setTimeout(() => {
-                            neofetchTerminal.style.transform = 'scale(1)';
-                            neofetchTerminal.style.opacity = '1';
-                        }, 300);
-                    } else if (btn.classList.contains('maximize')) {
-                        if (neofetchTerminal.style.width === '100%') {
-                            neofetchTerminal.style.width = '';
-                            neofetchTerminal.style.height = '';
-                            neofetchTerminal.style.position = '';
-                            neofetchTerminal.style.zIndex = '';
-                        } else {
-                            neofetchTerminal.style.width = '100%';
-                            neofetchTerminal.style.height = '100%';
-                            neofetchTerminal.style.position = 'absolute';
-                            neofetchTerminal.style.zIndex = '1000';
-                        }
-                    } else if (btn.classList.contains('close')) {
-                        neofetchTerminal.style.transform = 'scale(0.8)';
-                        neofetchTerminal.style.opacity = '0';
-                        setTimeout(() => {
-                            neofetchTerminal.style.display = 'none';
-                            setTimeout(() => {
-                                neofetchTerminal.style.display = '';
-                                neofetchTerminal.style.transform = 'scale(1)';
-                                neofetchTerminal.style.opacity = '1';
-                            }, 3000);
-                        }, 300);
-                    }
-                });
-            });
-        }
+        // --- Кнопки управления окнами удалены ---
 
         // --- Mobile menu functionality ---
+        const mobileTerminalBtn = document.querySelector('.mobile-terminal-btn');
+        
         if (mobileMenuBtn && neofetchTerminal && linksSection) {
             mobileMenuBtn.addEventListener('click', (e) => {
                 if (mobileMenuBtn.classList.contains('button-disabled')) {
@@ -878,15 +1047,47 @@ function startBiosBoot() {
                 disableButton(mobileMenuBtn, 500);
                 playAudio(click, 0.3);
 
-                neofetchTerminal.classList.toggle('mobile-hidden');
                 linksSection.classList.toggle('mobile-hidden');
+                if (linksSection.classList.contains('mobile-hidden')) {
+                    neofetchTerminal.classList.remove('mobile-hidden');
+                } else {
+                    neofetchTerminal.classList.add('mobile-hidden');
+                }
 
                 const icon = mobileMenuBtn.querySelector('i');
+                if (icon) {
+                    if (linksSection.classList.contains('mobile-hidden')) {
+                        icon.className = 'fas fa-link';
+                    } else {
+                        icon.className = 'fas fa-bars';
+                    }
+                }
+            });
+        }
+        
+        // --- Mobile terminal button functionality ---
+        if (mobileTerminalBtn && neofetchTerminal && linksSection) {
+            mobileTerminalBtn.addEventListener('click', (e) => {
+                if (mobileTerminalBtn.classList.contains('button-disabled')) {
+                    return;
+                }
+
+                disableButton(mobileTerminalBtn, 500);
+                playAudio(click, 0.3);
+
+                neofetchTerminal.classList.toggle('mobile-hidden');
+                if (neofetchTerminal.classList.contains('mobile-hidden')) {
+                    linksSection.classList.remove('mobile-hidden');
+                } else {
+                    linksSection.classList.add('mobile-hidden');
+                }
+
+                const icon = mobileTerminalBtn.querySelector('i');
                 if (icon) {
                     if (neofetchTerminal.classList.contains('mobile-hidden')) {
                         icon.className = 'fas fa-terminal';
                     } else {
-                        icon.className = 'fas fa-bars';
+                        icon.className = 'fas fa-times';
                     }
                 }
             });
@@ -921,11 +1122,6 @@ function startBiosBoot() {
         // --- Переключатель музыки ---
         if (toggle && soundIcon) {
             toggle.addEventListener('click', () => {
-                if (toggle.classList.contains('button-disabled')) {
-                    return;
-                }
-
-                disableButton(toggle, 500);
                 playAudio(click, 0.3);
 
                 musicOn = !musicOn;

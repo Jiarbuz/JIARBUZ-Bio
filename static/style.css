@@ -2,6 +2,7 @@
 :root { --green: #00ff66; }
 
 * { box-sizing: border-box; }
+
 html, body {
   margin: 0;
   padding: 0;
@@ -10,8 +11,8 @@ html, body {
   font-family: 'Perfect DOS VGA 437', monospace;
   color: var(--green);
   display: flex;
-  align-items: center;
-  justify-content: center;
+  align-items: flex-start;     
+  justify-content: flex-start; 
   overflow: hidden;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
@@ -23,12 +24,15 @@ html, body {
   inset: 0;
   background: #000;
   display: flex;
-  align-items: center;
-  justify-content: center;
+  align-items: flex-start;
+  justify-content: flex-start;
+  padding: 12px 14px;
   z-index: 100;
   transition: opacity 1s ease-out;
   overflow: hidden;
+  position: relative;
 }
+
 .boot-screen.fade-out {
   opacity: 0;
   pointer-events: none;
@@ -51,7 +55,10 @@ html, body {
 }
 
 .ami-header {
-  margin-bottom: 20px;
+  margin: 0 0 20px 0;
+  width: 100%;
+  max-width: 800px;
+  text-align: left;
 }
 
 .ami-logo-container {
@@ -91,8 +98,11 @@ html, body {
 }
 
 .ami-system-info {
-  margin-bottom: 20px;
+  margin: 0 0 20px 0;
   line-height: 1.6;
+  text-align: left;
+  width: 100%;
+  max-width: 800px;
 }
 
 .ami-info-line {
@@ -109,7 +119,10 @@ html, body {
 }
 
 .ami-instructions {
-  margin-top: 20px;
+  margin: 20px 0 0 0;
+  width: 100%;
+  max-width: 800px;
+  text-align: left;
 }
 
 .ami-press-key {
@@ -144,23 +157,27 @@ html, body {
 }
 
 .boot-log {
-  width: 90%;
-  max-width: 800px;
-  font-size: 1.1rem;
+  position: absolute;
+  top: 12px;
+  left: 14px;
+  z-index: 5;
+  width: auto;
+  max-width: 900px;
+  font-size: 1.05rem;
   line-height: 1.4;
   text-shadow: 0 0 3px var(--green);
   white-space: pre;
   color: var(--green);
-  position: relative;
   filter: contrast(1.1) brightness(1.05);
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  justify-content: center;
+  align-items: flex-start;  /* ⬅ ТЕКСТ СТАНЕТ СЛЕВА */
+  justify-content: flex-start;
   text-align: left;
-  margin: 0 auto;
+  margin: 0;
   padding: 0;
 }
+
 
 .boot-log::before {
   content: '';
@@ -294,6 +311,34 @@ html, body {
   display: none;
 }
 
+.boot-log.intro-glitch {
+  filter: contrast(1.4) brightness(1.1) saturate(1.3) blur(0.6px);
+  animation: introFlash 0.08s steps(2) infinite, introShift 0.14s steps(2) infinite;
+}
+
+@keyframes introFlash {
+  0% { opacity: 0.9; text-shadow: 2px 0 #0f0, -2px 0 #0f0, 0 0 4px #0f0; }
+  50% { opacity: 0.5; text-shadow: -2px 0 #0f0, 2px 0 #0f0, 0 0 6px #0f0; }
+  100% { opacity: 1; text-shadow: 2px 0 #0f0, -2px 0 #0f0, 0 0 4px #0f0; }
+}
+
+@keyframes introShift {
+  0% { transform: translate(0, 0); }
+  20% { transform: translate(-3px, 2px); }
+  40% { transform: translate(3px, -2px); }
+  60% { transform: translate(-4px, -1px); }
+  80% { transform: translate(2px, 3px); }
+  100% { transform: translate(0, 0); }
+}
+
+@keyframes introSkew {
+  0% { transform: skewX(0deg) skewY(0deg); }
+  25% { transform: skewX(4deg) skewY(-2deg); }
+  50% { transform: skewX(-5deg) skewY(3deg); }
+  75% { transform: skewX(6deg) skewY(-4deg); }
+  100% { transform: skewX(0deg) skewY(0deg); }
+}
+
 /* Базовая анимация появления строк с глитчем */
 .boot-line {
   opacity: 0;
@@ -307,6 +352,18 @@ html, body {
 
 .boot-line.glitch {
   animation: typeAppear 0.4s forwards, textGlitch 0.3s infinite;
+}
+
+/* Усиленный глитч всего лога на время загрузки */
+.boot-log.boot-glitch {
+  filter: contrast(1.5) brightness(1.2) saturate(1.45);
+  animation:
+    introFlash 0.08s steps(2) infinite,
+    introShift 0.12s steps(2) infinite,
+    introSkew 0.14s steps(2) infinite,
+    screenRipple 0.08s infinite,
+    rippleEffect 0.12s infinite,
+    screenDistortion 0.18s infinite;
 }
 
 @keyframes typeAppear {
@@ -893,6 +950,33 @@ html, body {
   transition: all 0.3s ease;
 }
 
+/* Кнопка терминала для мобильных */
+.mobile-terminal-btn {
+  display: none;
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  z-index: 1000;
+  color: var(--green);
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 10px;
+  border: 1px solid rgba(0,255,102,0.3);
+  border-radius: 5px;
+  background: rgba(0,0,0,0.7);
+  transition: all 0.3s ease;
+}
+
+.mobile-terminal-btn:hover {
+  background: rgba(0,255,102,0.1);
+  transform: scale(1.05);
+}
+
+.mobile-terminal-btn.button-disabled {
+  opacity: 0.4;
+  transform: scale(0.95);
+}
+
 .mobile-menu-btn.button-disabled {
   opacity: 0.4;
   transform: scale(0.95);
@@ -999,9 +1083,16 @@ html, body {
 }
 
 /* === RESPONSIVE === */
-@media (max-width: 1200px) {
-  .crt { width: 94vw; height: 88vh; }
-  .frame-body { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
+
+/* === ПЛАНШЕТЫ (768px - 1200px) === */
+@media (min-width: 768px) and (max-width: 1200px) {
+  .crt { 
+    width: 94vw; 
+    height: 88vh; 
+  }
+  .frame-body { 
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); 
+  }
   .neofetch-content {
     grid-template-columns: 1fr;
     gap: 15px;
@@ -1013,9 +1104,26 @@ html, body {
   .terminal-body {
     padding: 18px;
   }
+  .main-content {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  .links-section {
+    order: 1;
+  }
+  .neofetch-terminal {
+    order: 2;
+  }
   
-  /* AMI Splash адаптация */
+  /* BIOS загрузка для планшетов - левый верхний угол с меньшими отступами */
+  .boot-screen {
+    align-items: flex-start;
+    justify-content: flex-start;
+    padding: 15px 15px 15px 15px;
+  }
   .ami-splash {
+    align-items: flex-start;
+    justify-content: flex-start;
     padding: 15px 20px;
   }
   .ami-company-name {
@@ -1024,13 +1132,78 @@ html, body {
   .ami-info-line {
     font-size: 0.85rem;
   }
+  .boot-log {
+    width: auto;
+    max-width: 900px;
+    font-size: 1.02rem;
+    align-items: flex-start;
+    justify-content: flex-start;
+    position: absolute;
+    top: 12px;
+    left: 14px;
+    transform: none;
+  }
 }
 
-@media (max-width: 992px) {
-  .crt { width: 96vw; height: 90vh; }
-  .frame-body { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
-  .link-block { font-size: 1.2rem; padding: 18px 22px; }
-  .brand { font-size: 2rem; margin: 12px; }
+/* === ПК (1200px+) === */
+@media (min-width: 1200px) {
+  .crt { 
+    width: 92vw; 
+    height: 86vh; 
+  }
+  .main-content {
+    grid-template-columns: 1fr 1fr;
+    gap: 25px;
+  }
+  .frame-body { 
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); 
+  }
+  .neofetch-content {
+    grid-template-columns: auto 1fr;
+    gap: 20px;
+  }
+  
+  /* BIOS загрузка для ПК - левый верхний угол */
+  .boot-screen {
+    align-items: flex-start;
+    justify-content: flex-start;
+    padding: 20px 20px 20px 20px;
+  }
+  .ami-splash {
+    align-items: flex-start;
+    justify-content: flex-start;
+    padding: 20px 30px;
+  }
+  .boot-log {
+    width: auto;
+    max-width: 900px;
+    font-size: 1.05rem;
+    align-items: flex-start;
+    justify-content: flex-start;
+    position: absolute;
+    top: 12px;
+    left: 14px;
+    transform: none;
+  }
+}
+
+/* === МАЛЕНЬКИЕ ПЛАНШЕТЫ (992px - 768px) === */
+@media (min-width: 768px) and (max-width: 992px) {
+  .crt { 
+    width: 96vw; 
+    height: 90vh; 
+  }
+  .frame-body { 
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); 
+  }
+  .link-block { 
+    font-size: 1.2rem; 
+    padding: 18px 22px; 
+  }
+  .brand { 
+    font-size: 2rem; 
+    margin: 12px; 
+  }
   .main-content {
     grid-template-columns: 1fr;
     gap: 20px;
@@ -1048,9 +1221,25 @@ html, body {
     padding: 16px;
   }
   
-  /* AMI Splash адаптация */
-  .ami-splash {
+  /* BIOS загрузка для средних планшетов - левый верхний угол */
+  .boot-screen {
+    align-items: flex-start;
+    justify-content: flex-start;
     padding: 12px 15px;
+  }
+  .ami-splash {
+    align-items: flex-start;
+    justify-content: flex-start;
+    padding: 12px 15px;
+  }
+  .ami-header {
+    margin: 0 0 15px 0;
+  }
+  .ami-system-info {
+    margin: 0 0 15px 0;
+  }
+  .ami-instructions {
+    margin: 15px 0 0 0;
   }
   .ami-triangle-logo {
     border-width: 15px 0 15px 25px;
@@ -1070,8 +1259,20 @@ html, body {
   .ami-press-key {
     font-size: 0.9rem;
   }
+  .boot-log {
+    position: absolute;
+    top: 12px;
+    left: 14px;
+    width: auto;
+    max-width: 900px;
+    font-size: 0.95rem;
+    align-items: flex-start;
+    justify-content: flex-start;
+    transform: none;
+  }
 }
 
+/* === ТЕЛЕФОНЫ (до 768px) === */
 @media (max-width: 768px) {
   .crt {
     width: 98vw;
@@ -1092,6 +1293,7 @@ html, body {
     padding: 18px 20px;
     min-height: 65px;
     justify-content: center;
+    width: 100%;
   }
   .brand {
     font-size: 1.8rem;
@@ -1112,9 +1314,14 @@ html, body {
   .main-content {
     padding: 20px;
     gap: 15px;
+    grid-template-columns: 1fr;
   }
   .neofetch-terminal {
     margin: 0 10px;
+    order: 2;
+  }
+  .links-section {
+    order: 1;
   }
   .terminal-body {
     padding: 15px;
@@ -1139,6 +1346,11 @@ html, body {
   .mobile-menu-btn {
     display: block;
   }
+  
+  /* Кнопка терминала для мобильных */
+  .mobile-terminal-btn {
+    display: block;
+  }
 
   /* Скрываем элементы в мобильном меню */
   .main-content {
@@ -1157,7 +1369,7 @@ html, body {
 
   .command-hint {
     bottom: 30px;
-    left: 10px; /* АДАПТАЦИЯ ДЛЯ МОБИЛЬНЫХ */
+    left: 10px;
     font-size: 0.7rem;
   }
 
@@ -1170,13 +1382,24 @@ html, body {
     height: 15px;
   }
   
-  /* AMI Splash адаптация для мобильных */
+  /* BIOS загрузка для мобильных - центрировано для удобства чтения */
+  .boot-screen {
+    align-items: center;
+    justify-content: center;
+    padding: 10px;
+  }
   .ami-splash {
+    align-items: center;
+    justify-content: center;
     padding: 10px 12px;
     overflow-y: auto;
+    width: 100%;
+    max-width: 100%;
   }
   .ami-header {
-    margin-bottom: 15px;
+    margin: 0 auto 15px auto;
+    width: 100%;
+    max-width: 100%;
   }
   .ami-logo-container {
     gap: 10px;
@@ -1194,7 +1417,9 @@ html, body {
     font-size: 1rem;
   }
   .ami-system-info {
-    margin-bottom: 15px;
+    margin: 0 auto 15px auto;
+    width: 100%;
+    max-width: 100%;
   }
   .ami-info-line {
     font-size: 0.75rem;
@@ -1202,7 +1427,9 @@ html, body {
     margin-bottom: 1px;
   }
   .ami-instructions {
-    margin-top: 15px;
+    margin: 15px auto 0 auto;
+    width: 100%;
+    max-width: 100%;
   }
   .ami-press-key {
     font-size: 0.85rem;
@@ -1211,9 +1438,16 @@ html, body {
   .boot-log {
     font-size: 0.9rem;
     width: 95%;
+    text-align: left;
+    align-items: flex-start;
+    justify-content: flex-start;
+  }
+  .boot-line {
+    text-align: left;
   }
 }
 
+/* === МАЛЕНЬКИЕ ТЕЛЕФОНЫ (до 480px) === */
 @media (max-width: 480px) {
   .crt {
     width: 99vw;
@@ -1230,6 +1464,7 @@ html, body {
     padding: 16px 18px;
     min-height: 60px;
     gap: 12px;
+    width: 100%;
   }
   .brand {
     font-size: 1.6rem;
@@ -1285,7 +1520,7 @@ html, body {
 
   .command-hint {
     bottom: 25px;
-    left: 8px; /* АДАПТАЦИЯ ДЛЯ ОЧЕНЬ МАЛЕНЬКИХ ЭКРАНОВ */
+    left: 8px;
     font-size: 0.65rem;
   }
 
@@ -1298,9 +1533,33 @@ html, body {
     height: 12px;
   }
   
-  /* AMI Splash для очень маленьких экранов */
+  /* BIOS загрузка для очень маленьких экранов - центрировано */
+  .boot-screen {
+    align-items: center;
+    justify-content: center;
+    padding: 8px;
+  }
   .ami-splash {
+    align-items: center;
+    justify-content: center;
     padding: 8px 10px;
+    width: 100%;
+    max-width: 100%;
+  }
+  .ami-header {
+    margin: 0 auto 10px auto;
+    width: 100%;
+    max-width: 100%;
+  }
+  .ami-system-info {
+    margin: 0 auto 10px auto;
+    width: 100%;
+    max-width: 100%;
+  }
+  .ami-instructions {
+    margin: 10px auto 0 auto;
+    width: 100%;
+    max-width: 100%;
   }
   .ami-triangle-logo {
     border-width: 10px 0 10px 16px;
@@ -1323,6 +1582,19 @@ html, body {
   .boot-log {
     font-size: 0.8rem;
     width: 98%;
+    text-align: left;
+    align-items: flex-start;
+    justify-content: flex-start;
+  }
+  .boot-line {
+    text-align: left;
+  }
+  
+  /* Кнопки для маленьких экранов */
+  .mobile-menu-btn,
+  .mobile-terminal-btn {
+    padding: 8px;
+    font-size: 1.3rem;
   }
 }
 
@@ -1344,6 +1616,18 @@ html, body {
   .info-line {
     font-size: 0.75rem;
   }
+  
+  /* BIOS загрузка для очень маленьких экранов */
+  .boot-screen {
+    padding: 5px;
+  }
+  .ami-splash {
+    padding: 5px 8px;
+  }
+  .boot-log {
+    width: 99%;
+    font-size: 0.75rem;
+  }
 }
 
 /* Для очень высоких экранов */
@@ -1354,7 +1638,10 @@ html, body {
 
 /* Портретная ориентация на мобильных */
 @media (max-width: 768px) and (orientation: portrait) {
-  .crt { height: 92vh; }
+  .crt { 
+    height: 92vh; 
+    width: 98vw;
+  }
   .inner-frame {
     padding: 22px 16px;
     max-height: calc(100% - 70px);
@@ -1363,11 +1650,30 @@ html, body {
     max-height: 350px;
     overflow-y: auto;
   }
+  .main-content {
+    grid-template-columns: 1fr;
+  }
+  
+  /* BIOS загрузка для портретной ориентации - центрировано */
+  .boot-screen {
+    align-items: center;
+    justify-content: center;
+    padding: 10px;
+  }
+  .boot-log {
+    width: 95%;
+    font-size: 0.9rem;
+    align-items: flex-start;
+    justify-content: flex-start;
+  }
 }
 
 /* Ландшафтная ориентация на мобильных */
 @media (max-width: 768px) and (orientation: landscape) {
-  .crt { height: 88vh; }
+  .crt { 
+    height: 88vh; 
+    width: 98vw;
+  }
   .inner-frame {
     padding: 18px 14px;
     max-height: calc(100% - 60px);
@@ -1378,6 +1684,7 @@ html, body {
   }
   .main-content {
     grid-template-columns: 1fr 1fr;
+    gap: 15px;
   }
   .neofetch-content {
     grid-template-columns: 1fr;
@@ -1386,21 +1693,39 @@ html, body {
     font-size: 0.5rem;
   }
   
+  /* BIOS загрузка для ландшафтной ориентации - левый верхний угол */
+  .boot-screen {
+    align-items: flex-start;
+    justify-content: flex-start;
+    padding: 8px 15px;
+  }
+  .boot-log {
+    width: 90%;
+    font-size: 0.85rem;
+    align-items: flex-start;
+    justify-content: flex-start;
+  }
+  
   /* AMI Splash для ландшафтной ориентации */
   .ami-splash {
+    align-items: flex-start;
+    justify-content: flex-start;
     padding: 8px 15px;
     overflow-y: auto;
     max-height: 100vh;
   }
+  .ami-header {
+    margin: 0 0 10px 0;
+  }
+  .ami-system-info {
+    margin: 0 0 10px 0;
+  }
+  .ami-instructions {
+    margin: 10px 0 0 0;
+  }
   .ami-info-line {
     font-size: 0.7rem;
     line-height: 1.2;
-  }
-  .ami-system-info {
-    margin-bottom: 10px;
-  }
-  .ami-instructions {
-    margin-top: 10px;
   }
 }
 
@@ -1420,9 +1745,33 @@ html, body {
     background: var(--green);
     color: #000;
   }
+  
+  .mobile-menu-btn:active,
+  .mobile-terminal-btn:active {
+    background: rgba(0,255,102,0.2);
+    transform: scale(0.95);
+  }
 }
 
 @media (max-width: 768px) {
+  .boot-screen {
+    padding: 10px;
+    align-items: center;
+    justify-content: center;
+    transform: none !important;
+  }
+
+  .boot-log {
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 96vw;
+    max-width: none;
+    font-size: 0.95rem;
+    align-items: flex-start;
+  }
+
   .monitor, .boot-screen, .app {
     transform: scale(0.8);
     transform-origin: top center;

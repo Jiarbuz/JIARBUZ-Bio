@@ -25,9 +25,9 @@
       <div class="ami-system-info">
         <div class="ami-info-line">AMIBIOS(C) 2025 American Megatrends, Inc.</div>
         <div class="ami-info-line">ASUS TUF GAMING X570-PLUS (WI-FI) ACPI BIOS Revision 1005</div>
-        <div class="ami-info-line">CPU: AMD Ryzen 5 3600 6-Core Processor</div>
-        <div class="ami-info-line">Speed: 3600MHz</div>
-        <div class="ami-info-line">Total Memory: 16384MB (DDR4-2133)</div>
+        <div class="ami-info-line">GPU: <span id="gpu-name">Loading...</span></div>
+        <div class="ami-info-line">Speed: <span id="gpu-speed">Loading...</span></div>
+        <div class="ami-info-line">Total Memory: <span id="memory-info">Loading...</span></div>
         <div class="ami-info-line">USB Devices total: 1 Drive, 4 Keyboards, 3 Mice, 0 Hub</div>
         <div class="ami-info-line">USB Drive #0: SanDisk</div>
         <div class="ami-info-line ami-section-title">Detected Devices...</div>
@@ -70,6 +70,11 @@
           <div class="mobile-menu-btn">
             <i class="fas fa-bars"></i>
           </div>
+          
+          <!-- Кнопка терминала для мобильных -->
+          <div class="mobile-terminal-btn">
+            <i class="fas fa-terminal"></i>
+          </div>
 
           <header class="topbar">
             <h1 class="brand">JIARBUZ</h1>
@@ -80,11 +85,6 @@
             <div class="neofetch-terminal">
               <div class="terminal-header">
                 <span class="terminal-title">system@jiarbuz:~</span>
-                <div class="terminal-controls">
-                  <span class="control-btn minimize"></span>
-                  <span class="control-btn maximize"></span>
-                  <span class="control-btn close"></span>
-                </div>
               </div>
               <div class="terminal-body">
                 <div class="neofetch-content">
@@ -149,7 +149,7 @@
                 </div>
 
                 <!-- Command hints -->
-                <div class="command-hint">Try commands: help, clear, exit, reboot, date, whoami, devices, games</div>
+                <div class="command-hint">Try commands: help, clear, exit, reboot, date, whoami, devices, games, ping</div>
               </div>
             </div>
 
@@ -170,7 +170,7 @@
           </div>
 
           <footer class="bottombar">
-            <button id="sound-toggle" class="sound-btn" aria-pressed="false" title="Toggle background music">
+            <button id="sound-toggle" class="sound-btn" aria-pressed="false">
               <i id="sound-icon" class="fa-solid fa-volume-high" aria-hidden="true"></i>
             </button>
           </footer>
