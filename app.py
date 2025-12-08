@@ -469,6 +469,12 @@ def sitemap():
     return resp
 
 
+@app.route("/ping", methods=["GET"])
+def ping():
+    """Lightweight ping endpoint for client latency measurement."""
+    return jsonify({"status": "ok"}), 200
+
+
 if __name__ == "__main__":
     check_internet_connection()
     check_telegram_connection()

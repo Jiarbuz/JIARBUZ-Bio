@@ -115,12 +115,12 @@ Mousepad: ARDOR GAMING JR-XL Jacquard Black (XL)`;
     output.scrollTop = output.scrollHeight;
 }
 
-// Измерение пинга (примерно, через fetch к публичному ресурсу)
+// Измерение пинга (через внутренний эндпоинт)
 async function measurePing() {
     try {
-        const url = 'https://www.google.com/generate_204';
         const t0 = performance.now();
-        await fetch(url, { mode: 'no-cors', cache: 'no-store' });
+        const res = await fetch(`/ping?ts=${Date.now()}`, { cache: 'no-store' });
+        if (!res.ok) return -1;
         const dt = Math.round(performance.now() - t0);
         return dt;
     } catch (e) {
