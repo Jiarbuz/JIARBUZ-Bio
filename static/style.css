@@ -632,8 +632,8 @@ html, body {
 
 /* === CRT CONTAINER === */
 .crt {
-  width: 92vw;
-  height: 86vh;
+  width: clamp(320px, 92vw, 1200px);
+  height: clamp(480px, 86vh, 900px);
   border: 3px solid var(--green);
   position: relative;
   background: radial-gradient(ellipse at center,
@@ -780,8 +780,8 @@ html, body {
 
 .neofetch-content {
   display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 20px;
+  grid-template-columns: minmax(0, auto) minmax(0, 1fr);
+  gap: clamp(12px, 2vw, 20px);
   align-items: start;
   margin-bottom: 15px;
 }
@@ -789,10 +789,12 @@ html, body {
 .ascii-art {
   color: var(--green);
   font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-  font-size: 0.7rem;
-  line-height: 1.1;
+  font-size: clamp(0.55rem, 1.2vw, 0.8rem);
+  line-height: 1.15;
   white-space: pre;
   text-shadow: 0 0 2px var(--green);
+  overflow-x: auto;
+  max-width: 100%;
 }
 
 .system-info {
@@ -1305,6 +1307,10 @@ html, body {
     gap: 15px;
     grid-template-columns: 1fr;
   }
+  .neofetch-content {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
   .neofetch-terminal {
     margin: 0 10px;
     order: 2;
@@ -1316,7 +1322,11 @@ html, body {
     padding: 15px;
   }
   .ascii-art {
-    font-size: 0.55rem;
+    font-size: clamp(0.46rem, 2vw, 0.6rem);
+    line-height: 1.05;
+    max-height: 200px;
+    margin: 0 auto;
+    text-align: center;
   }
   .info-line {
     font-size: 0.85rem;
@@ -1485,8 +1495,10 @@ html, body {
     padding: 12px;
   }
   .ascii-art {
-    font-size: 0.5rem;
+    font-size: clamp(0.42rem, 2.4vw, 0.52rem);
     line-height: 1;
+    max-height: 160px;
+    overflow-x: auto;
   }
   .info-line {
     font-size: 0.8rem;
@@ -1610,7 +1622,8 @@ html, body {
     padding: 18px 12px;
   }
   .ascii-art {
-    font-size: 0.45rem;
+    font-size: clamp(0.38rem, 3vw, 0.46rem);
+    max-height: 140px;
   }
   .info-line {
     font-size: 0.75rem;
