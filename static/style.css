@@ -1259,17 +1259,6 @@ html, body {
   .ami-press-key {
     font-size: 0.9rem;
   }
-  .boot-log {
-    position: absolute;
-    top: 12px;
-    left: 14px;
-    width: auto;
-    max-width: 900px;
-    font-size: 0.95rem;
-    align-items: flex-start;
-    justify-content: flex-start;
-    transform: none;
-  }
 }
 
 /* === ТЕЛЕФОНЫ (до 768px) === */
@@ -1755,7 +1744,7 @@ html, body {
 
 @media (max-width: 768px) {
   .boot-screen {
-    padding: 12px 14px;
+    padding: 10px;
     align-items: flex-start;
     justify-content: flex-start;
     transform: none !important;
@@ -1763,12 +1752,12 @@ html, body {
 
   .boot-log {
     position: absolute;
-    top: 12px;
-    left: 14px;
-    transform: none;
-    width: auto;
-    max-width: 900px;
-    font-size: 1.05rem;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 96vw;
+    max-width: none;
+    font-size: 0.95rem;
     align-items: flex-start;
   }
 
