@@ -1526,12 +1526,17 @@ html, body {
   .boot-screen {
     align-items: center;
     justify-content: center;
-    padding: 8px;
+    padding: 10px;
+  }
+  .boot-screen {
+    align-items: center;
+    justify-content: center;
+    padding: 10px;
   }
   .ami-splash {
     align-items: center;
     justify-content: center;
-    padding: 8px 10px;
+    padding: 10px 12px;
     width: 100%;
     max-width: 100%;
   }
@@ -1569,8 +1574,13 @@ html, body {
     font-size: 0.8rem;
   }
   .boot-log {
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 96vw;
+    max-width: none;
     font-size: 0.8rem;
-    width: 98%;
     text-align: left;
     align-items: flex-start;
     justify-content: flex-start;
@@ -1584,29 +1594,6 @@ html, body {
   .mobile-terminal-btn {
     padding: 8px;
     font-size: 1.3rem;
-  }
-}
-
-/* Форсируем BIOS слева на мобильных (поверх более общих правил) */
-@media (max-width: 768px) {
-  .boot-screen {
-    align-items: flex-start !important;
-    justify-content: flex-start !important;
-    padding: 10px !important;
-  }
-  .boot-log {
-    position: absolute !important;
-    top: 10px !important;
-    left: 10px !important;
-    transform: none !important;
-    width: calc(100% - 20px) !important;
-    max-width: none !important;
-    font-size: 0.95rem !important;
-    align-items: flex-start !important;
-  }
-  .ami-splash {
-    align-items: flex-start !important;
-    justify-content: flex-start !important;
   }
 }
 
