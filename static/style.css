@@ -1755,26 +1755,21 @@ html, body {
 
 @media (max-width: 768px) {
   .boot-screen {
-    padding: 10px;
-    align-items: center;
-    justify-content: center;
+    padding: 12px 14px;
+    align-items: flex-start;
+    justify-content: flex-start;
     transform: none !important;
   }
 
   .boot-log {
     position: absolute;
-    top: 10px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 96vw;
-    max-width: none;
-    font-size: 0.95rem;
+    top: 12px;
+    left: 14px;
+    transform: none;
+    width: auto;
+    max-width: 900px;
+    font-size: 1.05rem;
     align-items: flex-start;
-  }
-
-  .monitor, .boot-screen, .app {
-    transform: scale(0.8);
-    transform-origin: top center;
   }
 
   .main-content {
