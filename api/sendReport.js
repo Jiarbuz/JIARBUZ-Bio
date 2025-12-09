@@ -15,7 +15,7 @@ app.post("/api/sendReport", async (req, res) => {
   const CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 
   if (!TOKEN || !CHAT_ID) {
-    return res.status(500).json({ error: "Bot token or chat ID not set in .env" });
+    return res.status(500).json({ error: "Bot token or chat ID not set in env" });
   }
 
   try {
