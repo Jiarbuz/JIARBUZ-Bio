@@ -12,9 +12,9 @@
 </head>
 <body>
 
-  <!-- BOOT SCREEN -->
+
   <div id="boot-screen" class="boot-screen" aria-hidden="false">
-    <!-- AMI BIOS Splash Screen -->
+
     <div id="ami-splash" class="ami-splash">
       <div class="ami-header">
         <div class="ami-logo-container">
@@ -44,11 +44,11 @@
         </div>
       </div>
     </div>
-    <!-- Boot Log (hidden initially) -->
+
     <div id="boot-log" class="boot-log hidden" role="status" aria-live="polite"></div>
   </div>
 
-  <!-- SHUTDOWN OVERLAY -->
+
   <div id="shutdown-overlay" class="shutdown-overlay">
     <div class="shutdown-text">System shutting down...</div>
     <div class="shutdown-progress">
@@ -58,20 +58,20 @@
 
 
 
-  <!-- MAIN UI -->
+
   <div id="app" class="app hidden" aria-hidden="true">
     <div class="fade-layer" aria-hidden="true"></div>
 
-    <!-- ОСНОВНОЙ МОНИТОР -->
+
     <div class="main-monitor">
       <div class="main-monitor-screen">
         <div class="crt" role="application" aria-label="Main UI">
-          <!-- Мобильное меню -->
+
           <div class="mobile-menu-btn">
             <i class="fas fa-bars"></i>
           </div>
           
-          <!-- Кнопка терминала для мобильных -->
+
           <div class="mobile-terminal-btn">
             <i class="fas fa-terminal"></i>
           </div>
@@ -81,7 +81,7 @@
           </header>
 
           <div class="main-content">
-            <!-- Neofetch терминал -->
+
             <div class="neofetch-terminal">
               <div class="terminal-header">
                 <span class="terminal-title">system@jiarbuz:~</span>
@@ -136,10 +136,10 @@
                   </div>
                 </div>
 
-                <!-- Output for terminal commands -->
+
                 <div class="terminal-output" id="terminal-output"></div>
 
-                <!-- Interactive terminal prompt -->
+
                 <div class="terminal-prompt">
                   <span class="prompt-user">jiarbuz@bio</span>
                   <span class="prompt-symbol">:</span>
@@ -148,12 +148,12 @@
                   <input type="text" class="terminal-input" id="terminal-input" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
                 </div>
 
-                <!-- Command hints -->
+
                 <div class="command-hint">Try commands: help, clear, exit, reboot, date, whoami, devices, games, ping</div>
               </div>
             </div>
 
-            <!-- Блок с ссылками -->
+
             <div class="links-section">
               <div class="inner-frame">
                 <div class="frame-title">BIO LINKS</div>
@@ -179,13 +179,13 @@
     </div>
   </div>
 
-  <!-- Audio -->
+
   <audio id="bg-music" src="{{ url_for('static', filename='sounds/background.mp3') }}" loop preload="auto"></audio>
   <audio id="hover-sound" src="{{ url_for('static', filename='sounds/hover.mp3') }}" preload="auto"></audio>
   <audio id="click-sound" src="{{ url_for('static', filename='sounds/click.mp3') }}" preload="auto"></audio>
   <audio id="appear-sound" src="{{ url_for('static', filename='sounds/interface_appear.mp3') }}" preload="auto"></audio>
 
-  <!-- Основной JS -->
+
   <script src="{{ url_for('static', filename='main.js') }}"></script>
 </body>
 </html>
