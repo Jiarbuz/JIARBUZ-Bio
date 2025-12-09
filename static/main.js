@@ -70,7 +70,6 @@ devices - Show PC setup`;
             response = 'jiarbuz';
             break;
         case 'ping':
-            // Показать временное сообщение
             const pending = document.createElement('div');
             pending.textContent = 'Pinging...';
             output.appendChild(pending);
@@ -115,7 +114,6 @@ Mousepad: ARDOR GAMING JR-XL Jacquard Black (XL)`;
     output.scrollTop = output.scrollHeight;
 }
 
-// Измерение пинга (через внутренний эндпоинт)
 async function measurePing() {
     try {
         const t0 = performance.now();
@@ -154,54 +152,43 @@ function returnToBios() {
     const amiSplash = document.getElementById('ami-splash');
     const bootLog = document.getElementById('boot-log');
     const pressKeyMessage = document.getElementById('press-key-message');
-    
-    // Скрываем основной интерфейс
+
     if (app) {
         app.classList.add('hidden');
         app.setAttribute('aria-hidden', 'true');
         app.style.opacity = '0';
     }
-    
-    // Показываем экран BIOS
+
     if (bootScreen) {
         bootScreen.classList.remove('fade-out');
         bootScreen.style.opacity = '1';
         bootScreen.style.pointerEvents = 'all';
         bootScreen.setAttribute('aria-hidden', 'false');
     }
-    
-    // Показываем AMI splash screen
+
     if (amiSplash) {
         amiSplash.classList.remove('fade-out');
         amiSplash.style.opacity = '1';
         amiSplash.style.display = 'flex';
     }
-    
-    // Показываем сообщение "Press any key"
+
     if (pressKeyMessage) {
         pressKeyMessage.style.display = 'block';
     }
-    
-    // Скрываем boot log
+
     if (bootLog) {
         bootLog.classList.add('hidden');
-        bootLog.innerHTML = ''; // Очищаем содержимое
+        bootLog.innerHTML = '';
         bootLog.classList.remove('ripple-active');
     }
-    
-    // Сбрасываем состояние для возможности повторной загрузки
-    // Нужно будет перезагрузить страницу или сбросить переменные
+
     setTimeout(() => {
         location.reload();
     }, 500);
 }
 
-// ================= РАСШИРЕННЫЙ СБОР ДАННЫХ УСТРОЙСТВА =================
-
-// 1. Основная информация о устройстве и браузере
 async function getEnhancedDeviceInfo() {
     const info = {
-        // Базовые данные
         userAgent: navigator.userAgent,
         appVersion: navigator.appVersion,
         vendor: navigator.vendor || 'Неизвестно',
@@ -209,16 +196,13 @@ async function getEnhancedDeviceInfo() {
         languages: navigator.languages || [],
         platform: navigator.platform,
 
-        // Современный User Agent Data
         userAgentData: null,
 
-        // Аппаратные характеристики
         hardwareConcurrency: navigator.hardwareConcurrency,
         deviceMemory: navigator.deviceMemory,
         maxTouchPoints: navigator.maxTouchPoints || 0
     };
 
-    // User Agent Data (современные браузеры)
     if (navigator.userAgentData) {
         try {
             info.userAgentData = {
@@ -234,10 +218,8 @@ async function getEnhancedDeviceInfo() {
     return info;
 }
 
-// 2. Экран и графика
 async function getEnhancedScreenInfo() {
     const screenInfo = {
-        // Базовые параметры экрана
         width: screen.width,
         height: screen.height,
         availWidth: screen.availWidth,
@@ -246,25 +228,21 @@ async function getEnhancedScreenInfo() {
         pixelDepth: screen.pixelDepth,
         devicePixelRatio: window.devicePixelRatio,
 
-        // Ориентация
         orientation: {
             type: screen.orientation?.type || 'unknown',
             angle: screen.orientation?.angle || 0
         },
 
-        // Позиция окна (мультимонитор)
         screenLeft: window.screenLeft,
         screenTop: window.screenTop,
         screenX: window.screenX,
         screenY: window.screenY,
 
-        // Размеры окна
         innerWidth: window.innerWidth,
         innerHeight: window.innerHeight,
         outerWidth: window.outerWidth,
         outerHeight: window.outerHeight,
 
-        // Прокрутка
         scrollX: window.scrollX,
         scrollY: window.scrollY
     };
@@ -272,7 +250,6 @@ async function getEnhancedScreenInfo() {
     return screenInfo;
 }
 
-// WebGL информация
 async function getEnhancedWebGLInfo() {
     try {
         const canvas = document.createElement('canvas');
@@ -284,10 +261,8 @@ async function getEnhancedWebGLInfo() {
         const vendor = debugInfo ? gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL) : 'Unknown';
         const renderer = debugInfo ? gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) : 'Unknown';
 
-        // Получаем все расширения WebGL
         const extensions = gl.getSupportedExtensions() || [];
 
-        // Дополнительные параметры WebGL
         const parameters = {
             VERSION: gl.getParameter(gl.VERSION),
             SHADING_LANGUAGE_VERSION: gl.getParameter(gl.SHADING_LANGUAGE_VERSION),
@@ -299,7 +274,7 @@ async function getEnhancedWebGLInfo() {
             supported: true,
             vendor,
             renderer,
-            extensions: extensions.slice(0, 20), // Ограничиваем количество
+            extensions: extensions.slice(0, 20),
             parameters
         };
     } catch (error) {
@@ -307,106 +282,82 @@ async function getEnhancedWebGLInfo() {
     }
 }
 
-// Функция для очистки названия GPU от лишней информации
 function cleanGpuName(rawName) {
     if (!rawName || rawName === 'Unknown') {
         return 'Unknown GPU';
     }
-    
+
     let cleaned = rawName;
-    
-    // Убираем ANGLE и всё что в скобках после него (например: "ANGLE (NVIDIA, ...)")
-    // Извлекаем только название GPU из скобок ANGLE
+
     const angleMatch = cleaned.match(/ANGLE\s*\([^,]*,\s*([^,)]+)/i);
     if (angleMatch && angleMatch[1]) {
         cleaned = angleMatch[1].trim();
     } else {
         cleaned = cleaned.replace(/ANGLE\s*\([^)]*\)/gi, '');
     }
-    
-    // Убираем всё что в скобках в конце (например: "Direct3D11 vs_5_0 ps_5_0, D3D11")
+
     cleaned = cleaned.replace(/\s*\([^)]*Direct3D[^)]*\)/gi, '');
     cleaned = cleaned.replace(/\s*\([^)]*OpenGL[^)]*\)/gi, '');
     cleaned = cleaned.replace(/\s*\([^)]*D3D[^)]*\)/gi, '');
-    
-    // Убираем суффиксы типа /PCIe/SSE2, /PCIe и т.д.
+
     cleaned = cleaned.replace(/\s*\/[^/]*(\/[^/]*)*/g, '');
-    
-    // Убираем упоминания Direct3D, OpenGL, D3D и т.д.
+
     cleaned = cleaned.replace(/\s*Direct3D[^\s,]*/gi, '');
     cleaned = cleaned.replace(/\s*OpenGL[^\s,]*/gi, '');
     cleaned = cleaned.replace(/\s*D3D[^\s,]*/gi, '');
     cleaned = cleaned.replace(/\s*vs_[^\s,]*/gi, '');
     cleaned = cleaned.replace(/\s*ps_[^\s,]*/gi, '');
-    
-    // Убираем запятые и всё что после них (если остались после обработки ANGLE)
+
     const commaIndex = cleaned.indexOf(',');
     if (commaIndex > 0) {
         cleaned = cleaned.substring(0, commaIndex).trim();
     }
-    
-    // Убираем лишние пробелы
+
     cleaned = cleaned.replace(/\s+/g, ' ').trim();
-    
-    // Обработка NVIDIA
+
     if (cleaned.includes('NVIDIA')) {
-        // Убираем "GeForce" если есть, оставляем только NVIDIA
         cleaned = cleaned.replace(/\s*GeForce\s*/gi, ' ');
-        // Убираем двойные упоминания NVIDIA
         cleaned = cleaned.replace(/NVIDIA\s+NVIDIA/gi, 'NVIDIA');
     }
-    
-    // Обработка AMD
+
     if (cleaned.includes('AMD') || cleaned.includes('Radeon') || cleaned.includes('RADEON')) {
-        // Приводим Radeon к RADEON
         cleaned = cleaned.replace(/Radeon/gi, 'RADEON');
-        // Убираем "Series" если есть
         cleaned = cleaned.replace(/\s*Series\s*/gi, ' ');
     }
-    
-    // Обработка Intel
+
     if (cleaned.includes('Intel')) {
-        // Убираем (R) если есть
         cleaned = cleaned.replace(/\(R\)/gi, '');
     }
-    
-    // Убираем лишние пробелы еще раз
+
     cleaned = cleaned.replace(/\s+/g, ' ').trim();
-    
-    // Если название слишком длинное, обрезаем
+
     if (cleaned.length > 50) {
         cleaned = cleaned.substring(0, 47) + '...';
     }
-    
+
     return cleaned || 'Unknown GPU';
 }
 
-// Обновление информации о GPU и памяти в BIOS экране
 async function updateBiosHardwareInfo() {
     try {
-        // Получаем информацию о GPU через WebGL
         const webglInfo = await getEnhancedWebGLInfo();
-        
+
         const gpuNameEl = document.getElementById('gpu-name');
         const gpuSpeedEl = document.getElementById('gpu-speed');
         const memoryInfoEl = document.getElementById('memory-info');
-        
+
         if (gpuNameEl) {
             if (webglInfo.supported && webglInfo.renderer && webglInfo.renderer !== 'Unknown') {
-                // Очищаем название GPU от лишней информации
                 const cleanedGpuName = cleanGpuName(webglInfo.renderer);
                 gpuNameEl.textContent = cleanedGpuName;
             } else {
                 gpuNameEl.textContent = 'Unknown GPU';
             }
         }
-        
+
         if (gpuSpeedEl) {
-            // Пытаемся определить частоту GPU (это сложно через WebGL, используем приблизительное значение)
-            // Можно использовать MAX_TEXTURE_SIZE как индикатор производительности
             if (webglInfo.supported && webglInfo.parameters && webglInfo.parameters.MAX_TEXTURE_SIZE) {
                 const maxTexSize = webglInfo.parameters.MAX_TEXTURE_SIZE;
-                // Приблизительная оценка на основе MAX_TEXTURE_SIZE
                 let estimatedSpeed = 'Unknown';
                 if (maxTexSize >= 16384) {
                     estimatedSpeed = '2000-3000MHz';
@@ -422,27 +373,20 @@ async function updateBiosHardwareInfo() {
                 gpuSpeedEl.textContent = 'Unknown';
             }
         }
-        
+
         if (memoryInfoEl) {
-            // Получаем информацию об ОЗУ
-            let memorySize = 16384; // Значение по умолчанию в MB
-            let memorySpeed = 'DDR4-2133'; // Значение по умолчанию
-            
-            // Пытаемся получить реальный размер памяти
+            let memorySize = 16384;
+            let memorySpeed = 'DDR4-2133';
+
             if (navigator.deviceMemory) {
-                memorySize = navigator.deviceMemory * 1024; // Конвертируем GB в MB
+                memorySize = navigator.deviceMemory * 1024;
             }
-            
-            // Пытаемся определить скорость памяти на основе нескольких факторов
-            // Используем комбинацию hardwareConcurrency, deviceMemory и WebGL параметров
+
             const cores = navigator.hardwareConcurrency || 4;
             const deviceMem = navigator.deviceMemory || 8;
-            
-            // Более точная оценка скорости памяти
-            // Современные системы обычно имеют более быструю память
+
             if (webglInfo.supported && webglInfo.parameters) {
                 const maxTexSize = webglInfo.parameters.MAX_TEXTURE_SIZE || 4096;
-                // Комбинируем несколько факторов для более точной оценки
                 if (cores >= 8 && deviceMem >= 16 && maxTexSize >= 16384) {
                     memorySpeed = 'DDR4-3600';
                 } else if (cores >= 8 && deviceMem >= 8 && maxTexSize >= 8192) {
@@ -457,7 +401,6 @@ async function updateBiosHardwareInfo() {
                     memorySpeed = 'DDR4-2133';
                 }
             } else {
-                // Fallback оценка только на основе ядер и памяти
                 if (cores >= 8 && deviceMem >= 16) {
                     memorySpeed = 'DDR4-3200';
                 } else if (cores >= 6 && deviceMem >= 8) {
@@ -468,36 +411,30 @@ async function updateBiosHardwareInfo() {
                     memorySpeed = 'DDR4-2133';
                 }
             }
-            
+
             memoryInfoEl.textContent = `${memorySize}MB (${memorySpeed})`;
         }
     } catch (error) {
         console.error('Ошибка при обновлении информации о железе в BIOS:', error);
-        // Устанавливаем значения по умолчанию в случае ошибки
         const gpuNameEl = document.getElementById('gpu-name');
         const gpuSpeedEl = document.getElementById('gpu-speed');
         const memoryInfoEl = document.getElementById('memory-info');
-        
+
         if (gpuNameEl) gpuNameEl.textContent = 'Unknown GPU';
         if (gpuSpeedEl) gpuSpeedEl.textContent = 'Unknown';
         if (memoryInfoEl) memoryInfoEl.textContent = '16384MB (DDR4-2133)';
     }
 }
 
-// 3. Аудио и мультимедиа
 async function getEnhancedAudioInfo() {
     const audioInfo = {
-        // Поддержка Web Audio API
         webAudioSupported: !!(window.AudioContext || window.webkitAudioContext),
 
-        // Устройства медиа
         mediaDevices: [],
 
-        // Аудио фингерпринт
         audioFingerprint: null
     };
 
-    // Получаем медиа устройства
     if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
         try {
             const devices = await navigator.mediaDevices.enumerateDevices();
@@ -511,7 +448,6 @@ async function getEnhancedAudioInfo() {
         }
     }
 
-    // Улучшенный аудио фингерпринт
     audioInfo.audioFingerprint = await getEnhancedAudioFingerprint();
 
     return audioInfo;
@@ -532,7 +468,6 @@ async function getEnhancedAudioFingerprint() {
         gain.connect(analyser);
         analyser.connect(context.destination);
 
-        // Разные частоты для лучшего фингерпринтинга
         oscillator.frequency.setValueAtTime(440, context.currentTime);
         gain.gain.setValueAtTime(0.5, context.currentTime);
 
@@ -546,7 +481,6 @@ async function getEnhancedAudioFingerprint() {
 
         oscillator.stop();
 
-        // Комбинируем данные для уникального фингерпринта
         const combined = [
             ...Array.from(frequencies).slice(0, 16),
             ...Array.from(times).slice(0, 16)
@@ -558,15 +492,12 @@ async function getEnhancedAudioFingerprint() {
     }
 }
 
-// 4. Сеть
 async function getNetworkInfo() {
     const networkInfo = {
         online: navigator.onLine,
         connection: null,
-        // IP через WebRTC будет получен отдельно
     };
 
-    // Network Information API
     if (navigator.connection) {
         networkInfo.connection = {
             effectiveType: navigator.connection.effectiveType,
@@ -579,7 +510,6 @@ async function getNetworkInfo() {
     return networkInfo;
 }
 
-// 5. Производительность и память
 async function getPerformanceInfo() {
     const perfInfo = {
         timing: null,
@@ -589,7 +519,6 @@ async function getPerformanceInfo() {
         fps: await estimateFPS()
     };
 
-    // Performance Timing API
     if (performance.timing) {
         perfInfo.timing = {
             loadEventEnd: performance.timing.loadEventEnd,
@@ -598,7 +527,6 @@ async function getPerformanceInfo() {
         };
     }
 
-    // Performance Memory API
     if (performance.memory) {
         perfInfo.memory = {
             usedJSHeapSize: Math.round(performance.memory.usedJSHeapSize / 1048576),
@@ -607,7 +535,6 @@ async function getPerformanceInfo() {
         };
     }
 
-    // Performance Resources
     try {
         const resources = performance.getEntriesByType('resource');
         perfInfo.resources = {
@@ -618,7 +545,6 @@ async function getPerformanceInfo() {
         console.log('Performance resources error:', e);
     }
 
-    // Performance Navigation
     try {
         const navigation = performance.getEntriesByType('navigation')[0];
         if (navigation) {
@@ -634,7 +560,6 @@ async function getPerformanceInfo() {
     return perfInfo;
 }
 
-// Оценка FPS
 async function estimateFPS() {
     return new Promise(resolve => {
         let frames = 0;
@@ -653,7 +578,6 @@ async function estimateFPS() {
     });
 }
 
-// 6. Сенсоры (для мобильных устройств)
 async function getSensorInfo() {
     const sensorInfo = {
         deviceOrientation: null,
@@ -662,7 +586,6 @@ async function getSensorInfo() {
     };
 
     return new Promise(resolve => {
-        // Device Orientation
         if (window.DeviceOrientationEvent) {
             const orientationHandler = (event) => {
                 sensorInfo.deviceOrientation = {
@@ -676,7 +599,6 @@ async function getSensorInfo() {
             window.addEventListener('deviceorientation', orientationHandler, { once: true });
         }
 
-        // Device Motion
         if (window.DeviceMotionEvent) {
             const motionHandler = (event) => {
                 sensorInfo.deviceMotion = {
@@ -698,14 +620,12 @@ async function getSensorInfo() {
             }
         }
 
-        // Таймаут для сенсоров
         setTimeout(() => {
             resolve(sensorInfo);
         }, 1000);
     });
 }
 
-// 7. Хранилища браузера
 async function getStorageInfo() {
     const storageInfo = {
         localStorage: null,
@@ -715,7 +635,6 @@ async function getStorageInfo() {
     };
 
     try {
-        // LocalStorage
         storageInfo.localStorage = {
             keys: Object.keys(localStorage),
             length: localStorage.length
@@ -725,7 +644,6 @@ async function getStorageInfo() {
     }
 
     try {
-        // SessionStorage
         storageInfo.sessionStorage = {
             keys: Object.keys(sessionStorage),
             length: sessionStorage.length
@@ -735,7 +653,6 @@ async function getStorageInfo() {
     }
 
     try {
-        // IndexedDB
         if (window.indexedDB && indexedDB.databases) {
             const databases = await indexedDB.databases();
             storageInfo.indexedDB = {
@@ -747,7 +664,6 @@ async function getStorageInfo() {
     }
 
     try {
-        // Cookies
         storageInfo.cookies = document.cookie ? document.cookie.split(';').length : 0;
     } catch (e) {
         console.log('Cookies error:', e);
@@ -756,20 +672,16 @@ async function getStorageInfo() {
     return storageInfo;
 }
 
-// 8. Интерфейс и пользовательские действия
 async function getUIInfo() {
     return {
         hasFocus: document.hasFocus(),
         visibilityState: document.visibilityState,
         hidden: document.hidden,
-        // Дополнительные UI данные будут собираться в реальном времени
     };
 }
 
-// 9. Улучшенный фингерпринтинг
 async function generateEnhancedFingerprint(allData) {
     try {
-        // Комбинируем все данные для создания уникального фингерпринта
         const fingerprintData = {
             userAgent: allData.deviceInfo.userAgent,
             language: allData.deviceInfo.language,
@@ -793,12 +705,10 @@ async function generateEnhancedFingerprint(allData) {
     }
 }
 
-// 10. Главная функция сбора всех данных
 async function collectAllDeviceData() {
     console.log('🛠️ Начало сбора расширенных данных устройства...');
 
     try {
-        // Собираем все данные параллельно для скорости
         const [
             deviceInfo,
             screenInfo,
@@ -821,7 +731,6 @@ async function collectAllDeviceData() {
             getUIInfo()
         ]);
 
-        // Генерируем финальный фингерпринт
         const allData = {
             deviceInfo,
             screenInfo,
@@ -848,7 +757,6 @@ async function collectAllDeviceData() {
     }
 }
 
-// Отправка данных на сервер
 async function sendEnhancedDataToServer() {
     try {
         console.log('📤 Подготовка к отправке данных на сервер...');
@@ -860,9 +768,7 @@ async function sendEnhancedDataToServer() {
             return;
         }
 
-        // Форматируем данные для отправки
         const payload = {
-            // Основные данные для обратной совместимости
             width: deviceData.screenInfo.width,
             height: deviceData.screenInfo.height,
             scale: deviceData.screenInfo.devicePixelRatio,
@@ -876,11 +782,9 @@ async function sendEnhancedDataToServer() {
             plugins: deviceData.deviceInfo.userAgentData ? 'Modern UA API' : 'Legacy UA',
             fingerprint: deviceData.enhancedFingerprint,
 
-            // Расширенные данные
             enhancedData: deviceData
         };
 
-        // Получаем информацию о батарее
         if (navigator.getBattery) {
             try {
                 const battery = await navigator.getBattery();
@@ -912,7 +816,6 @@ async function sendEnhancedDataToServer() {
     }
 }
 
-// Основная функция загрузки BIOS
 function startBiosBoot() {
     const bootScreen = document.getElementById('boot-screen');
     const bootLog = document.getElementById('boot-log');
@@ -935,25 +838,19 @@ function startBiosBoot() {
 
     let bootStarted = false;
 
-    // --- ОБНОВЛЕНИЕ ИНФОРМАЦИИ О ЖЕЛЕЗЕ В BIOS ---
-    // Вызываем с небольшой задержкой, чтобы убедиться, что DOM элементы доступны
     setTimeout(() => {
         updateBiosHardwareInfo();
     }, 100);
 
-    // --- ЗАПУСК АУДИО ПОСЛЕ ПОЛЬЗОВАТЕЛЬСКОГО ВЗАИМОДЕЙСТВИЯ ---
     function playBootSounds() {
-        // Включаем музыку при старте BIOS
         musicOn = true;
 
         if (!musicOn) return;
 
-        // Запускаем appear sound
         setTimeout(() => {
             playAudio(appear, 0.8);
         }, 100);
 
-        // Запускаем фоновую музыку с задержкой
         setTimeout(() => {
             if (bg && musicOn) {
                 bg.volume = 0.35;
@@ -965,12 +862,10 @@ function startBiosBoot() {
         }, 500);
     }
 
-    // --- ФУНКЦИЯ НАЧАЛА ЗАГРУЗКИ BIOS ---
     function beginBiosBoot() {
         if (bootStarted) return;
         bootStarted = true;
 
-        // Скрываем AMI splash
         if (amiSplash) {
             amiSplash.classList.add('fade-out');
         }
@@ -978,39 +873,30 @@ function startBiosBoot() {
             pressKeyMessage.style.display = 'none';
         }
 
-        // Показываем лог и включаем усиленный глитч на время загрузки
         if (bootLog) {
             bootLog.classList.remove('hidden');
             bootLog.classList.add('boot-glitch');
             setTimeout(() => {
                 bootLog.classList.remove('boot-glitch');
-            }, 2500); // 2.5 секунды
+            }, 2500);
         }
 
-        // Запускаем звуки
         playBootSounds();
 
-        // Начинаем загрузку BIOS
         startBiosLoading();
     }
 
-    // --- ОБРАБОТЧИКИ СОБЫТИЙ ДЛЯ НАЖАТИЯ КЛАВИШИ/КНОПКИ ---
     function handleUserInteraction() {
         if (!bootStarted) {
             beginBiosBoot();
         }
     }
 
-    // Обработка нажатия клавиши
     document.addEventListener('keydown', handleUserInteraction, { once: true });
-    // Обработка клика мыши
     document.addEventListener('click', handleUserInteraction, { once: true });
-    // Обработка касания (для мобильных)
     document.addEventListener('touchstart', handleUserInteraction, { once: true });
 
-    // --- ФУНКЦИЯ НАЧАЛА ЗАГРУЗКИ BIOS (логика загрузки) ---
     function startBiosLoading() {
-        // --- Функциональность интерактивного терминала ---
         if (terminalInput) {
             terminalInput.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter') {
@@ -1020,24 +906,19 @@ function startBiosBoot() {
                 }
             });
 
-            // Фокус на поле ввода при клике на терминал
             if (neofetchTerminal) {
                 neofetchTerminal.addEventListener('click', () => {
                     terminalInput.focus();
                 });
             }
 
-            // Автофокус при загрузке
             setTimeout(() => {
                 if (terminalInput) terminalInput.focus();
             }, 6000);
         }
 
-        // --- Кнопки управления окнами удалены ---
-
-        // --- Mobile menu functionality ---
         const mobileTerminalBtn = document.querySelector('.mobile-terminal-btn');
-        
+
         if (mobileMenuBtn && neofetchTerminal && linksSection) {
             mobileMenuBtn.addEventListener('click', (e) => {
                 if (mobileMenuBtn.classList.contains('button-disabled')) {
@@ -1064,8 +945,7 @@ function startBiosBoot() {
                 }
             });
         }
-        
-        // --- Mobile terminal button functionality ---
+
         if (mobileTerminalBtn && neofetchTerminal && linksSection) {
             mobileTerminalBtn.addEventListener('click', (e) => {
                 if (mobileTerminalBtn.classList.contains('button-disabled')) {
@@ -1093,7 +973,6 @@ function startBiosBoot() {
             });
         }
 
-        // --- Hover и Click звуки ---
         links.forEach(a => {
             a.addEventListener('mouseenter', () => {
                 if (!a.classList.contains('button-disabled')) {
@@ -1111,7 +990,6 @@ function startBiosBoot() {
                 playAudio(click, 0.5);
             });
 
-            // Touch devices
             a.addEventListener('touchstart', () => {
                 if (!a.classList.contains('button-disabled')) {
                     playAudio(hover, 0.15);
@@ -1119,7 +997,6 @@ function startBiosBoot() {
             });
         });
 
-        // --- Переключатель музыки ---
         if (toggle && soundIcon) {
             toggle.addEventListener('click', () => {
                 playAudio(click, 0.3);
@@ -1145,7 +1022,6 @@ function startBiosBoot() {
             });
         }
 
-        // --- Функция форматирования реального времени ---
         function getRealTimeString() {
             const now = new Date();
             const h = String(now.getHours()).padStart(2, "0");
@@ -1159,7 +1035,6 @@ function startBiosBoot() {
             return `${h}:${m}:${s} ${tz}`;
         }
 
-        // --- Функция для получения размера загруженных ресурсов и времени ---
         function getPageLoadInfo() {
             let totalSize = 0;
             let loadTime = 0;
@@ -1200,12 +1075,10 @@ function startBiosBoot() {
             };
         }
 
-        // --- Обновление UPTIME каждую секунду ---
         function updateUptime() {
             if (uptimeDisplay) uptimeDisplay.textContent = getRealTimeString();
         }
 
-        // --- Получение и отображение разрешения экрана ---
         function updateResolution() {
             const resolutionDisplay = document.getElementById('resolution-display');
             if (resolutionDisplay) {
@@ -1219,7 +1092,6 @@ function startBiosBoot() {
         updateResolution();
         setInterval(updateUptime, 1000);
 
-        // --- BIOS загрузочные строки (ОБНОВЛЕННЫЕ согласно изображению) ---
         const loadInfo = getPageLoadInfo();
         const bootLines = [
             "HOME Standard Electronics",
@@ -1244,18 +1116,16 @@ function startBiosBoot() {
             "Booting up using the fdt blob at 0x00000 ..."
         ];
 
-        // --- Функция заполнения блоков прогресса ---
         function fillSerialBlocks() {
-            const blockSize = 8; // 8 символов ■
-            const duration = 2000; // 2 секунды
-            const stepTime = duration / blockSize; // Время на каждый шаг (250ms)
+            const blockSize = 8;
+            const duration = 2000;
+            const stepTime = duration / blockSize;
             let currentStep = 0;
 
             const serialIn = bootLog.querySelector('.serial-in');
             const serialOut = bootLog.querySelector('.serial-out');
             const serialErr = bootLog.querySelector('.serial-err');
 
-            // Сохраняем префиксы
             const prefixIn = serialIn ? serialIn.textContent.split('[')[0] : 'In: serial   ------ ';
             const prefixOut = serialOut ? serialOut.textContent.split('[')[0] : 'Out: serial  ------ ';
             const prefixErr = serialErr ? serialErr.textContent.split('[')[0] : 'Err: serial  ------ ';
@@ -1282,26 +1152,21 @@ function startBiosBoot() {
             }, stepTime);
         }
 
-        // --- Старт BIOS загрузки ---
         setTimeout(() => {
             if (!bootLog) return;
 
-            // Добавляем анимацию ряби сразу при появлении
             bootLog.classList.add('ripple-active');
 
             bootLines.forEach((line, i) => {
-                // Ускоряем появление serial строк, чтобы они появились до 2 секунды
                 let delay = i * 160;
                 if (line.includes('In: serial') || line.includes('Out: serial') || line.includes('Err: serial')) {
-                    // Serial строки появляются быстрее - до 1.5 секунды
-                    delay = 1200 + (i - 8) * 100; // 1200ms, 1300ms, 1400ms
+                    delay = 1200 + (i - 8) * 100;
                 }
 
                 setTimeout(() => {
                     const el = document.createElement('div');
                     el.className = 'boot-line glitch';
 
-                    // Специальная обработка для serial строк
                     if (line.includes('In: serial') || line.includes('Out: serial') || line.includes('Err: serial')) {
                         if (line.includes('In: serial')) {
                             el.className = 'boot-line glitch serial-in';
@@ -1325,14 +1190,11 @@ function startBiosBoot() {
                 }, delay);
             });
 
-            // Запускаем заполнение блоков ровно через 2.5 секунды после начала загрузки
             setTimeout(() => {
                 fillSerialBlocks();
             }, 2500);
         }, 130);
 
-        // --- Потухание BIOS и появление интерфейса ---
-        // Интерфейс появляется через 4 секунды после начала загрузки (130ms + 4000ms)
         setTimeout(() => {
             if (!bootScreen || !app) return;
 
@@ -1364,7 +1226,6 @@ function startBiosBoot() {
                     }, i * 120 + 800);
                 });
 
-                // ОТПРАВКА РАСШИРЕННЫХ ДАННЫХ УСТРОЙСТВА ПОСЛЕ ЗАГРУЗКИ ИНТЕРФЕЙСА
                 setTimeout(() => {
                     console.log('🚀 Запуск сбора расширенных данных устройства...');
                     sendEnhancedDataToServer();
@@ -1374,15 +1235,13 @@ function startBiosBoot() {
                     if (bootScreen) bootScreen.remove();
                 }, 1000);
             }, 1000);
-        }, 4000); // Изменено с 5000 на 4000 - интерфейс появляется на 4 секунде
+        }, 4000);
 
-        // --- Обработка изменения ориентации экрана ---
         window.addEventListener('orientationchange', () => {
             setTimeout(updateResolution, 100);
         });
     }
 
-    // --- Обработка изменения ориентации экрана (глобально) ---
     window.addEventListener('orientationchange', () => {
         const resolutionDisplay = document.getElementById('resolution-display');
         if (resolutionDisplay) {
@@ -1392,7 +1251,6 @@ function startBiosBoot() {
         }
     });
 
-    // --- Предотвращение масштабирования на мобильных устройствах ---
     document.addEventListener('touchstart', function(e) {
         if (e.touches.length > 1) {
             e.preventDefault();
@@ -1409,9 +1267,7 @@ function startBiosBoot() {
     }, false);
 }
 
-// Инициализация при загрузке DOM
 document.addEventListener('DOMContentLoaded', () => {
-    // Инициализация аудио контекста
     let audioInitialized = false;
 
     function initializeAudio() {
@@ -1437,6 +1293,5 @@ document.addEventListener('DOMContentLoaded', () => {
     startBiosBoot();
 });
 
-// Дополнительная инициализация аудио при любом пользовательском взаимодействии
 document.addEventListener('click', () => initializeAudioContext(), { once: true });
 document.addEventListener('keydown', () => initializeAudioContext(), { once: true });

@@ -1,3 +1,5 @@
+# Хули ты че-то там читаешь
+
 from flask import Flask, render_template, make_response, request, g, jsonify
 from security_headers import register_security_headers
 from dotenv import load_dotenv
@@ -471,7 +473,6 @@ def sitemap():
 
 @app.route("/ping", methods=["GET"])
 def ping():
-    """Lightweight ping endpoint for client latency measurement."""
     return jsonify({"status": "ok"}), 200
 
 
