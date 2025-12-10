@@ -27,8 +27,22 @@ function playAudio(audioElement, volume = 1.0) {
     try {
         audioElement.volume = volume;
         audioElement.currentTime = 0;
-        const playPromise = audioElement.play();
-        if (playPromise !== undefined) playPromise.catch(() => {});
+        
+        if (audioElement.readyState >= 2) {
+            const playPromise = audioElement.play();
+            if (playPromise !== undefined) {
+                playPromise.catch(() => {});
+            }
+        } else {
+            audioElement.load();
+            audioElement.addEventListener('canplaythrough', function playWhenReady() {
+                audioElement.removeEventListener('canplaythrough', playWhenReady);
+                const playPromise = audioElement.play();
+                if (playPromise !== undefined) {
+                    playPromise.catch(() => {});
+                }
+            }, { once: true });
+        }
         return true;
     } catch { return false; }
 }
@@ -975,8 +989,18 @@ function startBiosBoot() {
 
         links.forEach(a => {
             a.addEventListener('mouseenter', () => {
-                if (!a.classList.contains('button-disabled')) {
-                    playAudio(hover, 0.25);
+                if (!a.classList.contains('button-disabled') && hover) {
+                    if (hover.readyState >= 2) {
+                        hover.pause();
+                        hover.currentTime = 0;
+                        hover.volume = 0.25;
+                        const playPromise = hover.play();
+                        if (playPromise !== undefined) {
+                            playPromise.catch(() => {});
+                        }
+                    } else {
+                        playAudio(hover, 0.25);
+                    }
                 }
             });
 
@@ -991,8 +1015,18 @@ function startBiosBoot() {
             });
 
             a.addEventListener('touchstart', () => {
-                if (!a.classList.contains('button-disabled')) {
-                    playAudio(hover, 0.15);
+                if (!a.classList.contains('button-disabled') && hover) {
+                    if (hover.readyState >= 2) {
+                        hover.pause();
+                        hover.currentTime = 0;
+                        hover.volume = 0.15;
+                        const playPromise = hover.play();
+                        if (playPromise !== undefined) {
+                            playPromise.catch(() => {});
+                        }
+                    } else {
+                        playAudio(hover, 0.15);
+                    }
                 }
             });
         });
@@ -1282,9 +1316,19 @@ document.addEventListener('DOMContentLoaded', () => {
         [bg, appear, hover, click].forEach(audio => {
             if (audio) {
                 audio.load();
-                audio.volume = 0;
+                if (audio === bg) {
+                    audio.volume = 0;
+                } else {
+                    audio.volume = 1.0;
+                }
             }
         });
+        
+        if (hover) {
+            hover.addEventListener('canplaythrough', () => {
+                hover.volume = 1.0;
+            }, { once: true });
+        }
 
         audioInitialized = true;
     }
