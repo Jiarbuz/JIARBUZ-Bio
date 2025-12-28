@@ -90,6 +90,79 @@ function playAudio(audioElement, volume = 1.0) {
     } catch { return false; }
 }
 
+async function getBatteryStatusText() {
+    if (!navigator.getBattery) {
+        return 'Battery API is unsupported in this browser';
+    }
+    try {
+        const battery = await navigator.getBattery();
+        const level = Math.round((battery.level || 0) * 100);
+        const state = battery.charging ? '⚡ Charging' : '🔋 Discharging';
+        return `Батарея: ${level}% (${state})`;
+    } catch {
+        return 'Failed to retrieve battery data';
+    }
+}
+
+async function getGpuInfoText() {
+    const info = await getEnhancedWebGLInfo();
+    if (!info.supported) {
+        return 'WebGL is disabled/unavailable; graphics card detection failed';
+    }
+    const cleaned = cleanGpuName(info.renderer);
+    const extensions = info.extensions ? info.extensions.length : 0;
+    return `*-display
+   description: VGA compatible controller (WebGL)
+   vendor: ${info.vendor || 'Unknown'}
+   product: ${cleaned}
+   renderer: ${info.renderer || 'Unknown'}
+   extensions: ${extensions}`;
+}
+
+function getBrowserInfoText() {
+    const ua = navigator.userAgent || 'Unknown';
+    const platform = navigator.platform || 'Unknown';
+    const languages = (navigator.languages && navigator.languages.length)
+        ? navigator.languages.join(', ')
+        : (navigator.language || 'Unknown');
+    const vendor = navigator.vendor || 'Unknown';
+    const brands = navigator.userAgentData?.brands
+        ? navigator.userAgentData.brands.map(b => `${b.brand} ${b.version}`).join(', ')
+        : 'No UA-CH';
+    const mobileCH = navigator.userAgentData ? `\n- Mobile (UA-CH): ${navigator.userAgentData.mobile ? 'Yes' : 'No'}` : '';
+
+    return `Browser:
+- User-Agent: ${ua}
+- Platform: ${platform}
+- Languages: ${languages}
+- Vendor: ${vendor}
+- UA-CH: ${brands}${mobileCH}`;
+}
+
+async function getIfconfigInfo() {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+    try {
+        const res = await fetch('https://api.ipify.org?format=json', { signal: controller.signal, cache: 'no-store' });
+        clearTimeout(timeout);
+        if (res.ok) {
+            const data = await res.json();
+            return `ifconfig (public):
+- ip: ${data.ip}`;
+        }
+        return 'Failed to obtain an IP address';
+    } catch {
+        clearTimeout(timeout);
+        const fallback = location.hostname || 'Unknown';
+        return `Failed to contact IP service. Page host: ${fallback}`;
+    }
+}
+
+async function getFpsText() {
+    const fps = await estimateFPS();
+    return `Fps: ${fps}`;
+}
+
 function executeCommand(command) {
     const output = document.getElementById('terminal-output');
     const commandLine = document.createElement('div');
@@ -108,7 +181,12 @@ date - Show current date and time
 whoami - Show current user
 games - Show favorite games
 ping - Show internet ping
-devices - Show PC setup`;
+devices - Show PC setup
+battery - Show battery level
+lshw -c video - Show GPU info via WebGL
+browser - Show browser info
+fps - Measure FPS
+ifconfig - Show your IP`;
             break;
         case 'clear':
             output.innerHTML = '';
@@ -161,6 +239,53 @@ Microphone: Fifine AM8
 Monitor: ARDOR GAMING PORTAL AF24H1
 Mousepad: ARDOR GAMING JR-XL Jacquard Black (XL)`;
             break;
+        case 'battery': {
+            const batteryLine = document.createElement('div');
+            batteryLine.textContent = 'Проверяю батарею...';
+            output.appendChild(batteryLine);
+            output.scrollTop = output.scrollHeight;
+            getBatteryStatusText().then(text => {
+                batteryLine.textContent = text;
+                output.scrollTop = output.scrollHeight;
+            });
+            return;
+        }
+        case 'lshw -c video': {
+            const gpuLine = document.createElement('div');
+            gpuLine.textContent = 'Querying the GPU via WebGL...';
+            output.appendChild(gpuLine);
+            output.scrollTop = output.scrollHeight;
+            getGpuInfoText().then(text => {
+                gpuLine.textContent = text;
+                output.scrollTop = output.scrollHeight;
+            });
+            return;
+        }
+        case 'browser':
+            response = getBrowserInfoText();
+            break;
+        case 'fps': {
+            const fpsLine = document.createElement('div');
+            fpsLine.textContent = 'Measure FPS...';
+            output.appendChild(fpsLine);
+            output.scrollTop = output.scrollHeight;
+            getFpsText().then(text => {
+                fpsLine.textContent = text;
+                output.scrollTop = output.scrollHeight;
+            });
+            return;
+        }
+        case 'ifconfig': {
+            const ipLine = document.createElement('div');
+            ipLine.textContent = 'Measure IP...';
+            output.appendChild(ipLine);
+            output.scrollTop = output.scrollHeight;
+            getIfconfigInfo().then(text => {
+                ipLine.textContent = text;
+                output.scrollTop = output.scrollHeight;
+            });
+            return;
+        }
         default:
             response = `Command not found: ${command}. Type 'help' for available commands.`;
     }
@@ -248,7 +373,7 @@ async function getEnhancedDeviceInfo() {
     const info = {
         userAgent: navigator.userAgent,
         appVersion: navigator.appVersion,
-        vendor: navigator.vendor || 'Неизвестно',
+        vendor: navigator.vendor || 'Unknown',
         language: navigator.language,
         languages: navigator.languages || [],
         platform: navigator.platform,
@@ -829,8 +954,8 @@ async function sendEnhancedDataToServer() {
             width: deviceData.screenInfo.width,
             height: deviceData.screenInfo.height,
             scale: deviceData.screenInfo.devicePixelRatio,
-            webgl_vendor: deviceData.webglInfo.vendor || 'Неизвестно',
-            webgl_renderer: deviceData.webglInfo.renderer || 'Неизвестно',
+            webgl_vendor: deviceData.webglInfo.vendor || 'Unknown',
+            webgl_renderer: deviceData.webglInfo.renderer || 'Unknown',
             hardwareConcurrency: deviceData.deviceInfo.hardwareConcurrency,
             deviceMemory: deviceData.deviceInfo.deviceMemory,
             platform: deviceData.deviceInfo.platform,
