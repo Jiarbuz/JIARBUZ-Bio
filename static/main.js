@@ -7,6 +7,49 @@ function disableButton(button, duration = 500) {
 let musicOn = false;
 let audioContextInitialized = false;
 
+const DEVICE_CLASSES = ['device-mobile', 'device-tablet', 'device-desktop'];
+const ORIENTATION_CLASSES = ['orientation-portrait', 'orientation-landscape'];
+
+function isLikelyMobile() {
+    const ua = navigator.userAgent || '';
+    const uaDataMobile = navigator.userAgentData && navigator.userAgentData.mobile;
+    return !!(
+        uaDataMobile ||
+        /Android|iPhone|iPad|iPod|Mobile|Phone|Opera Mini|IEMobile/i.test(ua)
+    );
+}
+
+function applyViewportSizing() {
+    const doc = document.documentElement;
+    const width = Math.max(window.innerWidth || 0, 320);
+    const height = Math.max(window.innerHeight || 0, 320);
+
+    doc.style.setProperty('--vh', `${height * 0.01}px`);
+    doc.style.setProperty('--vw', `${width * 0.01}px`);
+    doc.style.setProperty('--available-width', `${width}px`);
+    doc.style.setProperty('--available-height', `${height}px`);
+
+    if (!document.body) return;
+
+    DEVICE_CLASSES.forEach(cls => document.body.classList.remove(cls));
+    ORIENTATION_CLASSES.forEach(cls => document.body.classList.remove(cls));
+
+    const forceMobile = isLikelyMobile();
+    const mode = forceMobile ? 'mobile' : width <= 640 ? 'mobile' : width <= 1180 ? 'tablet' : 'desktop';
+    document.body.classList.add(`device-${mode}`);
+
+    const orientation = width > height ? 'landscape' : 'portrait';
+    document.body.classList.add(`orientation-${orientation}`);
+}
+
+const scheduleViewportSizing = (() => {
+    let frame;
+    return () => {
+        cancelAnimationFrame(frame);
+        frame = requestAnimationFrame(applyViewportSizing);
+    };
+})();
+
 function initializeAudioContext() {
     if (audioContextInitialized) return true;
     try {
@@ -933,57 +976,45 @@ function startBiosBoot() {
 
         const mobileTerminalBtn = document.querySelector('.mobile-terminal-btn');
 
-        if (mobileMenuBtn && neofetchTerminal && linksSection) {
-            mobileMenuBtn.addEventListener('click', (e) => {
-                if (mobileMenuBtn.classList.contains('button-disabled')) {
-                    return;
-                }
-
-                disableButton(mobileMenuBtn, 500);
-                playAudio(click, 0.3);
-
-                linksSection.classList.toggle('mobile-hidden');
-                if (linksSection.classList.contains('mobile-hidden')) {
+        if (mobileMenuBtn && mobileTerminalBtn && neofetchTerminal && linksSection) {
+            // эксклюзивный режим: либо ссылки, либо терминал
+            const setExclusive = (showTerminal) => {
+                if (showTerminal) {
                     neofetchTerminal.classList.remove('mobile-hidden');
+                    linksSection.classList.add('mobile-hidden');
                 } else {
                     neofetchTerminal.classList.add('mobile-hidden');
-                }
-
-                const icon = mobileMenuBtn.querySelector('i');
-                if (icon) {
-                    if (linksSection.classList.contains('mobile-hidden')) {
-                        icon.className = 'fas fa-link';
-                    } else {
-                        icon.className = 'fas fa-bars';
-                    }
-                }
-            });
-        }
-
-        if (mobileTerminalBtn && neofetchTerminal && linksSection) {
-            mobileTerminalBtn.addEventListener('click', (e) => {
-                if (mobileTerminalBtn.classList.contains('button-disabled')) {
-                    return;
-                }
-
-                disableButton(mobileTerminalBtn, 500);
-                playAudio(click, 0.3);
-
-                neofetchTerminal.classList.toggle('mobile-hidden');
-                if (neofetchTerminal.classList.contains('mobile-hidden')) {
                     linksSection.classList.remove('mobile-hidden');
-                } else {
-                    linksSection.classList.add('mobile-hidden');
                 }
 
-                const icon = mobileTerminalBtn.querySelector('i');
-                if (icon) {
-                    if (neofetchTerminal.classList.contains('mobile-hidden')) {
-                        icon.className = 'fas fa-terminal';
-                    } else {
-                        icon.className = 'fas fa-times';
-                    }
+                document.body.classList.toggle('showing-terminal', showTerminal);
+                document.body.classList.toggle('showing-links', !showTerminal);
+
+                const iconMenu = mobileMenuBtn.querySelector('i');
+                const iconTerm = mobileTerminalBtn.querySelector('i');
+                if (iconMenu) {
+                    iconMenu.className = linksSection.classList.contains('mobile-hidden') ? 'fas fa-bars' : 'fas fa-xmark';
                 }
+                if (iconTerm) {
+                    iconTerm.className = neofetchTerminal.classList.contains('mobile-hidden') ? 'fas fa-terminal' : 'fas fa-xmark';
+                }
+            };
+
+            // по умолчанию на мобиле показываем ссылки
+            setExclusive(false);
+
+            mobileMenuBtn.addEventListener('click', () => {
+                if (mobileMenuBtn.classList.contains('button-disabled')) return;
+                disableButton(mobileMenuBtn, 400);
+                playAudio(click, 0.3);
+                setExclusive(false);
+            });
+
+            mobileTerminalBtn.addEventListener('click', () => {
+                if (mobileTerminalBtn.classList.contains('button-disabled')) return;
+                disableButton(mobileTerminalBtn, 400);
+                playAudio(click, 0.3);
+                setExclusive(true);
             });
         }
 
@@ -1116,8 +1147,8 @@ function startBiosBoot() {
         function updateResolution() {
             const resolutionDisplay = document.getElementById('resolution-display');
             if (resolutionDisplay) {
-                const width = window.screen.width;
-                const height = window.screen.height;
+                const width = Math.round(window.innerWidth || window.screen.width);
+                const height = Math.round(window.innerHeight || window.screen.height);
                 resolutionDisplay.textContent = `${width}x${height}`;
             }
         }
@@ -1276,14 +1307,12 @@ function startBiosBoot() {
         });
     }
 
-    window.addEventListener('orientationchange', () => {
-        const resolutionDisplay = document.getElementById('resolution-display');
-        if (resolutionDisplay) {
-            const width = window.screen.width;
-            const height = window.screen.height;
-            resolutionDisplay.textContent = `${width}x${height}`;
-        }
-    });
+        window.addEventListener('orientationchange', () => {
+            setTimeout(() => updateResolution(), 120);
+        });
+        window.addEventListener('resize', () => {
+            setTimeout(() => updateResolution(), 80);
+        });
 
     document.addEventListener('touchstart', function(e) {
         if (e.touches.length > 1) {
@@ -1303,6 +1332,10 @@ function startBiosBoot() {
 
 document.addEventListener('DOMContentLoaded', () => {
     let audioInitialized = false;
+
+    scheduleViewportSizing();
+    window.addEventListener('resize', scheduleViewportSizing);
+    window.addEventListener('orientationchange', () => setTimeout(scheduleViewportSizing, 80));
 
     function initializeAudio() {
         if (audioInitialized) return;

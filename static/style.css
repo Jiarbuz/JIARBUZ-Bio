@@ -10,8 +10,8 @@ html, body {
   font-family: 'Perfect DOS VGA 437', monospace;
   color: var(--green);
   display: flex;
-  align-items: flex-start;     
-  justify-content: flex-start; 
+  align-items: flex-start;
+  justify-content: flex-start;
   overflow: hidden;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
@@ -1045,12 +1045,12 @@ html, body {
 }
 
 @media (min-width: 768px) and (max-width: 1200px) {
-  .crt { 
-    width: 94vw; 
-    height: 88vh; 
+  .crt {
+    width: 94vw;
+    height: 88vh;
   }
-  .frame-body { 
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); 
+  .frame-body {
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
   }
   .neofetch-content {
     grid-template-columns: 1fr;
@@ -1103,16 +1103,16 @@ html, body {
 }
 
 @media (min-width: 1200px) {
-  .crt { 
-    width: 92vw; 
-    height: 86vh; 
+  .crt {
+    width: 92vw;
+    height: 86vh;
   }
   .main-content {
     grid-template-columns: 1fr 1fr;
     gap: 25px;
   }
-  .frame-body { 
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); 
+  .frame-body {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   }
   .neofetch-content {
     grid-template-columns: auto 1fr;
@@ -1142,20 +1142,20 @@ html, body {
 }
 
 @media (min-width: 768px) and (max-width: 992px) {
-  .crt { 
-    width: 96vw; 
-    height: 90vh; 
+  .crt {
+    width: 96vw;
+    height: 90vh;
   }
-  .frame-body { 
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); 
+  .frame-body {
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   }
-  .link-block { 
-    font-size: 1.2rem; 
-    padding: 18px 22px; 
+  .link-block {
+    font-size: 1.2rem;
+    padding: 18px 22px;
   }
-  .brand { 
-    font-size: 2rem; 
-    margin: 12px; 
+  .brand {
+    font-size: 2rem;
+    margin: 12px;
   }
   .main-content {
     grid-template-columns: 1fr;
@@ -1571,8 +1571,8 @@ html, body {
 }
 
 @media (max-width: 768px) and (orientation: portrait) {
-  .crt { 
-    height: 92vh; 
+  .crt {
+    height: 92vh;
     width: 98vw;
   }
   .inner-frame {
@@ -1600,8 +1600,8 @@ html, body {
 }
 
 @media (max-width: 768px) and (orientation: landscape) {
-  .crt { 
-    height: 88vh; 
+  .crt {
+    height: 88vh;
     width: 98vw;
   }
   .inner-frame {
@@ -1670,7 +1670,7 @@ html, body {
     background: var(--green);
     color: #000;
   }
-  
+
   .mobile-menu-btn:active,
   .mobile-terminal-btn:active {
     background: rgba(0,255,102,0.2);
@@ -1798,5 +1798,121 @@ html, body {
   .main-monitor {
     width: 99vw;
     height: 94vh;
+  }
+}
+
+@media (max-width: 768px) {
+
+  html, body {
+    overflow: hidden;
+  }
+
+  .app {
+    padding: 0;
+  }
+
+
+  .crt {
+    width: 100vw;
+    height: 100svh;
+    margin: 0;
+    border-width: 2px;
+    border-radius: 0;
+  }
+
+
+  .brand {
+    font-size: 1.5rem;
+    margin: 10px 0 6px;
+    letter-spacing: 2px;
+  }
+
+
+  .main-content {
+    padding: 12px;
+    gap: 12px;
+    height: calc(100% - 60px);
+    display: flex;
+    flex-direction: column;
+  }
+
+
+  .inner-frame {
+    margin: 0;
+    padding: 14px;
+    border-width: 1px;
+    flex: 1;
+    overflow-y: auto;
+  }
+
+
+  .frame-title {
+    font-size: 1.1rem;
+    margin-bottom: 12px;
+  }
+
+  .frame-body {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .link-block {
+    width: 100%;
+    font-size: 1.05rem;
+    padding: 14px 16px;
+    min-height: 56px;
+    justify-content: center;
+    border-width: 1px;
+  }
+
+
+  .neofetch-terminal {
+    width: 100%;
+    max-height: 38vh;
+    margin: 0;
+    border-width: 1px;
+  }
+
+  .terminal-header {
+    padding: 6px 10px;
+  }
+
+  .terminal-title {
+    font-size: 0.85rem;
+  }
+
+  .terminal-body {
+    padding: 10px;
+    font-size: 0.8rem;
+  }
+
+  .ascii-art {
+    font-size: 0.48rem;
+    line-height: 1;
+  }
+
+  .terminal-output {
+    max-height: 90px;
+    font-size: 0.75rem;
+  }
+
+
+  .mobile-menu-btn,
+  .mobile-terminal-btn {
+    display: block;
+    padding: 8px;
+    font-size: 1.3rem;
+  }
+
+
+  .bottombar {
+    bottom: 6px;
+    right: 6px;
+  }
+
+  .sound-btn {
+    padding: 7px 10px;
+    font-size: 0.9rem;
   }
 }
