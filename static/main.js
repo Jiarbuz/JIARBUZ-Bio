@@ -97,8 +97,8 @@ async function getBatteryStatusText() {
     try {
         const battery = await navigator.getBattery();
         const level = Math.round((battery.level || 0) * 100);
-        const state = battery.charging ? '⚡ Charging' : '🔋 Discharging';
-        return `Батарея: ${level}% (${state})`;
+        const state = battery.charging ? '⚡ Charging' : 'Discharging';
+        return `Battery: ${level}% (${state})`;
     } catch {
         return 'Failed to retrieve battery data';
     }
