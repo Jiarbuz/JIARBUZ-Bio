@@ -186,7 +186,8 @@ battery - Show battery level
 lshw -c video - Show GPU info via WebGL
 browser - Show browser info
 fps - Measure FPS
-ifconfig - Show your IP`;
+ifconfig - Show your IP
+about - Show info about me and this site`;
             break;
         case 'clear':
             output.innerHTML = '';
@@ -238,6 +239,44 @@ Keyboard: ARDOR GAMING Blade PRO (Red)
 Microphone: Fifine AM8
 Monitor: ARDOR GAMING PORTAL AF24H1
 Mousepad: ARDOR GAMING JR-XL Jacquard Black (XL)`;
+            break;
+        case 'about':
+            response = `=== ABOUT ME & THIS SITE ===
+
+This is my personal BIO website - a retro-styled interactive
+terminal interface that represents my digital identity.
+
+=== PERSONAL INFO ===
+Name: Saveliy (Sava)
+Age: 17 years
+Location: RU Krasnoyarsk
+Nicknames: JIARBUZ
+Programming Language: Python
+
+=== INTERESTS & SKILLS ===
+- Software Development (creating apps and websites)
+- Hardware knowledge
+- Photography
+- Design
+- Music
+- Gaming
+
+=== PROJECTS ===
+1. POTERYANNYY OTCHIM (ROBLOX GAME)
+   - Platform: Roblox
+   - Link: roblox.com/games/17065374590/unnamed
+   - Description: A role-playing game on Roblox platform
+
+=== ABOUT THIS SITE ===
+- This is a BIOS-style interactive terminal
+- Built with HTML, CSS, and JavaScript
+- Features retro terminal aesthetics with CRT effects
+- Interactive commands and sound effects
+- Responsive design for all devices
+- Collects basic device info (for analytics only)
+
+=== CONTACT ===
+Check the links section for my social profiles and ways to connect.`;
             break;
         case 'battery': {
             const batteryLine = document.createElement('div');
