@@ -54,8 +54,8 @@
 
 ```bash
 # Клонируем репозиторий
-git clone https://github.com/yourusername/jiarbuz-portfolio.git
-cd jiarbuz-portfolio
+git clone https://github.com/Jiarbuz/JIARBUZ-Bio.git
+cd JIARBUZ-Bio
 ```
 
 ### 2️⃣ Настройка бэкенда (Flask)
