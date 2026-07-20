@@ -345,7 +345,7 @@ def index():
             {"name": "TikTok", "url": "https://www.tiktok.com/@jiarbuz", "icon": "fa-brands fa-tiktok"},
             {"name": "Discord", "url": "https://discord.com/users/971767339282497536", "icon": "fa-brands fa-discord"},
             {"name": "Twitch", "url": "https://www.twitch.tv/jiarbuz228", "icon": "fa-brands fa-twitch"},
-            {"name": "Reddit", "url": "https://www.reddit.com/user/WatermelonJuicy2/", "icon": "fa-brands fa-reddit-alien"},
+            {"name": "Reddit", "url": "https://www.reddit.com/user/jiaruz/", "icon": "fa-brands fa-reddit-alien"},
             {"name": "Donate", "url": "https://yoomoney.ru/fundraise/1B54G3B36G9.250627", "icon": "fa-solid fa-hand-holding-heart"}
         ]
     }
